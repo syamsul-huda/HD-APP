@@ -18,6 +18,7 @@ dependencies:
   cached_network_image: ^3.3.0
   shared_preferences: ^2.2.0
   url_launcher: ^6.2.0
+  package_info_plus: ^8.0.0
 
 dev_dependencies:
   flutter_test:
