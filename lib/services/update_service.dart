@@ -34,11 +34,11 @@ class UpdateService {
       if (!_isNewer(tag, current)) return null;
 
       final assets = (data['assets'] as List?) ?? [];
-      final apk = assets.firstWhere(
+      final apkList = assets.where(
         (a) => (a['name'] as String).endsWith('.apk'),
-        orElse: () => null,
-      );
-      if (apk == null) return null;
+      ).toList();
+      if (apkList.isEmpty) return null;
+      final apk = apkList.first;
 
       return UpdateInfo(
         version: tag,
