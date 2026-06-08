@@ -29,11 +29,11 @@ jobs:
           channel: "stable"
 
       - name: Decrypt keystore
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_ENCRYPT_PASSWORD }}
         run: |
-          openssl enc -d -aes-256-cbc -salt -md sha256 \
-            -in android/app/release.keystore.enc \
-            -out android/app/release.keystore \
-            -k ${{ secrets.KEYSTORE_ENCRYPT_PASSWORD }}
+          pip install cryptography -q
+          python3 android/decrypt_keystore.py
           ls -la android/app/release.keystore
 
       - name: Get dependencies
