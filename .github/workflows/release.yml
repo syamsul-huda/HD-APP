@@ -31,7 +31,7 @@ jobs:
       - name: Setup keystore
         env:
           KEYSTORE_B64: ${{ secrets.KEYSTORE_BASE64 }}
-        run: python3 -c "import base64,os; open('android/app/release.keystore','wb').write(base64.b64decode(os.environ['KEYSTORE_B64'].strip()))" && ls -la android/app/release.keystore
+        run: python3 -c "import base64,os; d=''.join(os.environ['KEYSTORE_B64'].split()); open('android/app/release.keystore','wb').write(base64.b64decode(d))" && ls -la android/app/release.keystore
 
       - name: Get dependencies
         run: flutter pub get
