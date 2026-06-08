@@ -5,7 +5,10 @@ allprojects {
     }
 }
 
+// Redirect build output ke Flutter project's build/ directory (Gradle 8 compatible)
+layout.buildDirectory.set(file("../build"))
 subprojects {
+    layout.buildDirectory.set(rootProject.layout.buildDirectory.dir(project.name))
     project.evaluationDependsOn(":app")
 }
 
