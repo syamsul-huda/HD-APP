@@ -1,0 +1,26 @@
+<!-- Tambahkan baris berikut ke dalam <dict> di ios/Runner/Info.plist -->
+<!-- Izin untuk menyimpan foto/video ke galeri -->
+<key>NSPhotoLibraryUsageDescription</key>
+<string>VideoSaver perlu akses untuk menyimpan video yang diunduh</string>
+<key>NSPhotoLibraryAddUsageDescription</key>
+<string>VideoSaver perlu akses untuk menyimpan video ke galeri</string>
+
+<!-- Izinkan koneksi HTTP ke localhost (untuk development) -->
+<key>NSAppTransportSecurity</key>
+<dict>
+    <key>NSAllowsArbitraryLoads</key>
+    <false/>
+    <key>NSExceptionDomains</key>
+    <dict>
+        <key>localhost</key>
+        <dict>
+            <key>NSExceptionAllowsInsecureHTTPLoads</key>
+            <true/>
+        </dict>
+        <key>10.0.2.2</key>
+        <dict>
+            <key>NSExceptionAllowsInsecureHTTPLoads</key>
+            <true/>
+        </dict>
+    </dict>
+</dict>
