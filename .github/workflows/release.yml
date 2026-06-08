@@ -28,24 +28,23 @@ jobs:
           flutter-version: "3.24.0"
           channel: "stable"
 
-      - name: Setup keystore
-        env:
-          KEYSTORE_B64: ${{ secrets.KEYSTORE_BASE64 }}
-        run: python3 -c "import base64,os; d=''.join(os.environ['KEYSTORE_B64'].split()); open('android/app/release.keystore','wb').write(base64.b64decode(d))" && ls -la android/app/release.keystore
+      - name: Decrypt keystore
+        run: |
+          openssl enc -d -aes-256-cbc -salt -md sha256 \
+            -in android/app/release.keystore.enc \
+            -out android/app/release.keystore \
+            -k ${{ secrets.KEYSTORE_ENCRYPT_PASSWORD }}
+          ls -la android/app/release.keystore
 
       - name: Get dependencies
         run: flutter pub get
 
       - name: Build APK
-        run: flutter build apk --release 2>&1 | tee /tmp/build.log; exit ${PIPESTATUS[0]}
+        run: flutter build apk --release
         env:
-          KEY_STORE_PASSWORD: ${{ secrets.KEY_STORE_PASSWORD }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-
-      - name: Print error log
-        if: failure()
-        run: tail -200 /tmp/build.log
+          KEY_STORE_PASSWORD: hdapp123
+          KEY_PASSWORD: hdapp123
+          KEY_ALIAS: hdapp
 
       - name: Rename APK
         run: mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/HD-APP-${{ github.ref_name }}.apk
