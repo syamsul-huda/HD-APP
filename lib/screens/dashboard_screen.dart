@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import '../services/api_service.dart';
 import '../services/update_service.dart';
 import 'home_screen.dart';
 import 'reader_screen.dart';
+import 'scanner_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -32,11 +34,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
       barrierDismissible: false,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) => AlertDialog(
-          backgroundColor: const Color(0xFF1C1A0E),
+          backgroundColor: const Color(0xFF1E2640),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: const Row(
             children: [
-              Icon(Icons.system_update, color: Color(0xFFD4AF37)),
+              Icon(Icons.system_update, color: Color(0xFF7B8BFF)),
               SizedBox(width: 8),
               Text('Update Tersedia', style: TextStyle(color: Colors.white)),
             ],
@@ -63,7 +65,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 LinearProgressIndicator(
                   value: progress,
                   backgroundColor: Colors.white12,
-                  color: const Color(0xFFD4AF37),
+                  color: const Color(0xFF7B8BFF),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -82,8 +84,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFD4AF37),
-                      foregroundColor: const Color(0xFF1C1A0E),
+                      backgroundColor: const Color(0xFF7B8BFF),
+                      foregroundColor: const Color(0xFF1E2640),
                       minimumSize: Size.zero,
                       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                     ),
@@ -103,6 +105,69 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
+  void _showSettings() {
+    final api = ApiService();
+    final ctrl = TextEditingController(text: api.backendUrl);
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1E2640),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.settings_rounded, color: Color(0xFF7B8BFF), size: 20),
+            SizedBox(width: 8),
+            Text('Pengaturan', style: TextStyle(color: Colors.white)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('URL Backend Server (Video Downloader)',
+                style: TextStyle(fontSize: 12, color: Colors.white60)),
+            const SizedBox(height: 8),
+            TextField(
+              controller: ctrl,
+              style: const TextStyle(fontSize: 14),
+              decoration: const InputDecoration(
+                hintText: 'http://192.168.1.x:8000',
+              ),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              '• Android Emulator: http://10.0.2.2:8000\n'
+              '• HP Fisik: http://<IP-Komputer>:8000\n'
+              '• iOS Simulator: http://localhost:8000',
+              style: TextStyle(fontSize: 11, color: Colors.white38, height: 1.6),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Batal', style: TextStyle(color: Colors.white54)),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              await api.setBackendUrl(ctrl.text.trim());
+              if (ctx.mounted) Navigator.pop(ctx);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Text('Backend URL disimpan'),
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(minimumSize: const Size(80, 40)),
+            child: const Text('Simpan'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -113,19 +178,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
             Container(
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
-                color: const Color(0xFFD4AF37).withOpacity(0.2),
+                color: const Color(0xFF7B8BFF).withOpacity(0.2),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: const Icon(
                 Icons.apps_rounded,
-                color: Color(0xFFD4AF37),
+                color: Color(0xFF7B8BFF),
                 size: 18,
               ),
             ),
             const SizedBox(width: 8),
-            const Text('HD App'),
+            const Text('SuperAppHD'),
           ],
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings_rounded, size: 22),
+            onPressed: _showSettings,
+            tooltip: 'Pengaturan',
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 40),
@@ -151,7 +223,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               title: 'Video Downloader',
               description:
                   'Download video dari YouTube, TikTok, Instagram, Facebook, dan 1000+ platform lainnya',
-              accentColor: const Color(0xFFCE8946),
+              accentColor: const Color(0xFF7B8BFF),
               tags: const ['YouTube', 'TikTok', 'Instagram', '+1000'],
               onTap: () => Navigator.push(
                 context,
@@ -163,12 +235,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
               icon: Icons.menu_book_rounded,
               title: 'Pembaca Dokumen',
               description:
-                  'Buka dan baca file PDF, Word, Excel, PowerPoint, TXT, CSV, dan format lainnya',
-              accentColor: const Color(0xFFD4AF37),
+                  'Buka PDF, Word, Excel, PowerPoint, TXT langsung in-app tanpa aplikasi lain',
+              accentColor: const Color(0xFF4ECDC4),
               tags: const ['PDF', 'Word', 'Excel', 'PPT'],
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const ReaderScreen()),
+              ),
+            ),
+            const SizedBox(height: 16),
+            _FeatureCard(
+              icon: Icons.document_scanner_rounded,
+              title: 'Scanner Dokumen',
+              description:
+                  'Scan KTP, ijazah, SIM, sertifikat, dan dokumen lainnya. Simpan sebagai PDF atau JPG',
+              accentColor: const Color(0xFFFF6B9D),
+              tags: const ['KTP', 'Ijazah', 'SIM', 'Sertifikat'],
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ScannerScreen()),
               ),
             ),
           ],

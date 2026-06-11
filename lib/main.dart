@@ -16,44 +16,44 @@ class App extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'VideoSaver',
+      title: 'SuperAppHD',
       debugShowCheckedModeBanner: false,
       themeMode: ThemeMode.dark,
       darkTheme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFFD4AF37),
+          seedColor: const Color(0xFF7B8BFF),
           brightness: Brightness.dark,
         ),
         useMaterial3: true,
-        scaffoldBackgroundColor: const Color(0xFF0F0D06),
+        scaffoldBackgroundColor: const Color(0xFF151929),
         appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFF0F0D06),
+          backgroundColor: Color(0xFF151929),
           elevation: 0,
           centerTitle: true,
           titleTextStyle: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: Color(0xFFFDFBD4),
+            color: Colors.white,
           ),
         ),
         inputDecorationTheme: InputDecorationTheme(
           filled: true,
-          fillColor: const Color(0xFF1C1A0E),
+          fillColor: const Color(0xFF1E2640),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
             borderSide: BorderSide.none,
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Color(0xFFD4AF37), width: 1.5),
+            borderSide: const BorderSide(color: Color(0xFF7B8BFF), width: 1.5),
           ),
           contentPadding:
               const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFFD4AF37),
-            foregroundColor: const Color(0xFF1C1A0E),
+            backgroundColor: const Color(0xFF7B8BFF),
+            foregroundColor: Colors.white,
             minimumSize: const Size(double.infinity, 52),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
@@ -66,7 +66,7 @@ class App extends StatelessWidget {
           ),
         ),
         cardTheme: const CardTheme(
-          color: Color(0xFF1C1A0E),
+          color: Color(0xFF1E2640),
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.all(Radius.circular(16)),

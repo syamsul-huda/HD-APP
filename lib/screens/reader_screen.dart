@@ -6,6 +6,9 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/recent_file.dart';
 import 'pdf_viewer_screen.dart';
+import 'docx_viewer_screen.dart';
+import 'xlsx_viewer_screen.dart';
+import 'pptx_viewer_screen.dart';
 
 class ReaderScreen extends StatefulWidget {
   const ReaderScreen({super.key});
@@ -132,31 +135,41 @@ class _ReaderScreenState extends State<ReaderScreen> {
     if (!mounted) return;
 
     if (ext == 'pdf') {
-      await Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => PdfViewerScreen(path: path, title: name),
-        ),
-      );
+      await Navigator.push(context,
+          MaterialPageRoute(builder: (_) => PdfViewerScreen(path: path, title: name)));
       return;
     }
 
     if (ext == 'txt' || ext == 'csv') {
       final content = await File(path).readAsString();
       if (!mounted) return;
-      await Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => _TextViewerScreen(title: name, content: content),
-        ),
-      );
+      await Navigator.push(context,
+          MaterialPageRoute(builder: (_) => _TextViewerScreen(title: name, content: content)));
       return;
     }
 
-    // Word, Excel, PPT, dan format lain → buka dengan app sistem
+    if (ext == 'docx' || ext == 'odt') {
+      await Navigator.push(context,
+          MaterialPageRoute(builder: (_) => DocxViewerScreen(path: path, title: name)));
+      return;
+    }
+
+    if (ext == 'xlsx' || ext == 'ods') {
+      await Navigator.push(context,
+          MaterialPageRoute(builder: (_) => XlsxViewerScreen(path: path, title: name)));
+      return;
+    }
+
+    if (ext == 'pptx' || ext == 'odp') {
+      await Navigator.push(context,
+          MaterialPageRoute(builder: (_) => PptxViewerScreen(path: path, title: name)));
+      return;
+    }
+
+    // Format binary lama (.doc, .xls, .ppt) → buka dengan app sistem
     final result = await OpenFilex.open(path);
     if (result.type != ResultType.done && mounted) {
-      _snack('Tidak ada aplikasi yang bisa membuka file ini. Install WPS Office atau Microsoft Office.');
+      _snack('Format .${ext.toUpperCase()} tidak didukung secara langsung. Install WPS Office untuk membukanya.');
     }
   }
 
@@ -182,7 +195,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
         title: const Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.menu_book_rounded, color: Color(0xFFD4AF37), size: 20),
+            Icon(Icons.menu_book_rounded, color: Color(0xFF7B8BFF), size: 20),
             SizedBox(width: 8),
             Text('Pembaca Dokumen'),
           ],
@@ -266,7 +279,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
           : const Icon(Icons.folder_open_rounded),
       label: Text(_loading ? 'Membuka...' : 'Pilih File Dokumen'),
       style: ElevatedButton.styleFrom(
-        backgroundColor: const Color(0xFFD4AF37),
+        backgroundColor: const Color(0xFF7B8BFF),
         minimumSize: const Size(double.infinity, 52),
       ),
     );
@@ -334,7 +347,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
           margin: const EdgeInsets.only(bottom: 8),
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: const Color(0xFF1C1A0E),
+            color: const Color(0xFF1E2640),
             borderRadius: BorderRadius.circular(14),
           ),
           child: Row(
@@ -406,7 +419,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
       case 'ppt': case 'pptx': case 'odp': return const Color(0xFFE65100);
       case 'txt': return const Color(0xFF546E7A);
       case 'csv': return const Color(0xFF00695C);
-      default: return const Color(0xFFD4AF37);
+      default: return const Color(0xFF7B8BFF);
     }
   }
 
