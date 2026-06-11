@@ -2,7 +2,6 @@ import 'dart:io';
 import 'package:excel/excel.dart' hide Border;
 import 'package:flutter/material.dart';
 
-// Excel-like spreadsheet viewer
 class XlsxViewerScreen extends StatefulWidget {
   final String path;
   final String title;
@@ -18,11 +17,19 @@ class _XlsxViewerScreenState extends State<XlsxViewerScreen> {
   bool _loading = true;
   String? _error;
 
+  // Pre-computed per-sheet column widths cache
+  final Map<String, List<double>> _colWidthCache = {};
+
   static const _excelGreen = Color(0xFF217346);
-  static const _excelHeaderBg = Color(0xFF217346);
-  static const _excelRowAlt = Color(0xFFEEF7EE);
   static const _excelBorder = Color(0xFFD0D0D0);
-  static const _excelRowBg = Colors.white;
+  static const double _rowNumWidth = 42.0;
+  static const double _minColWidth = 64.0;
+  static const double _maxColWidth = 280.0;
+  static const double _charWidth = 7.6; // px per char at fontSize 12
+  static const double _cellPadH = 16.0; // horizontal padding total
+  static const double _dataRowHeight = 30.0;
+  static const double _headerRowHeight = 34.0;
+  static const double _colHeaderHeight = 22.0;
 
   @override
   void initState() {
@@ -50,14 +57,55 @@ class _XlsxViewerScreenState extends State<XlsxViewerScreen> {
     if (v is TextCellValue) return v.value.text ?? '';
     if (v is IntCellValue) return v.value.toString();
     if (v is DoubleCellValue) {
-      final s = v.value.toStringAsFixed(2).replaceAll(RegExp(r'\.?0+$'), '');
-      return s;
+      // Keep meaningful decimals, strip trailing zeros
+      final s = v.value.toStringAsFixed(4);
+      return s.contains('.') ? s.replaceAll(RegExp(r'0+$'), '').replaceAll(RegExp(r'\.$'), '') : s;
     }
     if (v is BoolCellValue) return v.value ? 'TRUE' : 'FALSE';
     if (v is DateCellValue) {
-      return '${v.year}-${v.month.toString().padLeft(2,'0')}-${v.day.toString().padLeft(2,'0')}';
+      return '${v.year}-${v.month.toString().padLeft(2, '0')}-${v.day.toString().padLeft(2, '0')}';
+    }
+    if (v is DateTimeCellValue) {
+      return '${v.year}-${v.month.toString().padLeft(2, '0')}-${v.day.toString().padLeft(2, '0')} '
+          '${v.hour.toString().padLeft(2, '0')}:${v.minute.toString().padLeft(2, '0')}';
     }
     return v.toString();
+  }
+
+  /// Pre-compute column widths based on actual cell content for a sheet.
+  List<double> _getColWidths(String sheetName) {
+    if (_colWidthCache.containsKey(sheetName)) return _colWidthCache[sheetName]!;
+    final sheet = _excel!.tables[sheetName]!;
+    final rows = sheet.rows;
+    if (rows.isEmpty) return [];
+
+    final colCount = rows.map((r) => r.length).fold(0, (a, b) => b > a ? b : a);
+    final widths = List.filled(colCount, _minColWidth);
+
+    // Row 0 (header) gets a bit of extra weight — headers tend to define column meaning
+    for (int ri = 0; ri < rows.length; ri++) {
+      final row = rows[ri];
+      for (int ci = 0; ci < row.length && ci < colCount; ci++) {
+        final text = _cellText(row[ci]);
+        if (text.isEmpty) continue;
+        // Header row: treat font as bold (slightly wider per char)
+        final w = text.length * (ri == 0 ? _charWidth * 1.15 : _charWidth) + _cellPadH;
+        if (w > widths[ci]) widths[ci] = w.clamp(_minColWidth, _maxColWidth);
+      }
+    }
+
+    _colWidthCache[sheetName] = widths;
+    return widths;
+  }
+
+  String _colLetter(int index) {
+    String result = '';
+    int n = index;
+    do {
+      result = String.fromCharCode(65 + (n % 26)) + result;
+      n = (n ~/ 26) - 1;
+    } while (n >= 0);
+    return result;
   }
 
   @override
@@ -83,7 +131,11 @@ class _XlsxViewerScreenState extends State<XlsxViewerScreen> {
               children: [
                 Icon(Icons.table_chart_outlined, size: 14, color: Colors.white70),
                 SizedBox(width: 4),
-                Text('XLSX', style: TextStyle(fontSize: 11, color: Colors.white70, fontWeight: FontWeight.bold)),
+                Text('XLSX',
+                    style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.white70,
+                        fontWeight: FontWeight.bold)),
               ],
             ),
           ),
@@ -163,7 +215,8 @@ class _XlsxViewerScreenState extends State<XlsxViewerScreen> {
   Widget _buildTable() {
     if (_activeSheet == null || _excel == null) {
       return const Center(
-          child: Text('Tidak ada data', style: TextStyle(color: Color(0xFF9B9FAD))));
+          child: Text('Tidak ada data',
+              style: TextStyle(color: Color(0xFF9B9FAD))));
     }
 
     final sheet = _excel!.tables[_activeSheet!]!;
@@ -171,75 +224,75 @@ class _XlsxViewerScreenState extends State<XlsxViewerScreen> {
 
     if (rows.isEmpty) {
       return const Center(
-          child: Text('Sheet kosong', style: TextStyle(color: Color(0xFF9B9FAD))));
+          child: Text('Sheet kosong',
+              style: TextStyle(color: Color(0xFF9B9FAD))));
     }
 
-    // Calculate column widths based on content
-    final colCount = rows.map((r) => r.length).reduce((a, b) => a > b ? a : b);
+    final colWidths = _getColWidths(_activeSheet!);
+    final colCount = colWidths.length;
 
     return SingleChildScrollView(
       scrollDirection: Axis.vertical,
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Row number + column letters header
-            _buildColumnHeader(colCount),
-            // Data rows
-            ...rows.asMap().entries.map((entry) {
-              final rowIdx = entry.key;
-              final isHeader = rowIdx == 0;
-              final isAlt = !isHeader && rowIdx.isEven;
-              return _buildDataRow(
-                rowIndex: rowIdx,
-                cells: entry.value,
-                colCount: colCount,
-                isHeader: isHeader,
-                isAlt: isAlt,
-              );
-            }),
-          ],
+        child: IntrinsicWidth(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ── Sticky-style column letter header ──────────────────────────
+              _buildColLetterHeader(colWidths, colCount),
+              // ── Data rows ──────────────────────────────────────────────────
+              ...rows.asMap().entries.map((entry) {
+                return _buildDataRow(
+                  rowIndex: entry.key,
+                  cells: entry.value,
+                  colWidths: colWidths,
+                  colCount: colCount,
+                  isFirstRow: entry.key == 0,
+                  isAltRow: entry.key.isOdd,
+                );
+              }),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildColumnHeader(int colCount) {
+  Widget _buildColLetterHeader(List<double> colWidths, int colCount) {
     return Row(
       children: [
-        // Row number column
+        // Corner cell
         Container(
-          width: 36,
-          height: 24,
+          width: _rowNumWidth,
+          height: _colHeaderHeight,
           decoration: const BoxDecoration(
-            color: Color(0xFFE0E0E0),
+            color: Color(0xFFDDDDDD),
             border: Border(
               right: BorderSide(color: _excelBorder),
               bottom: BorderSide(color: _excelBorder),
             ),
           ),
         ),
-        ...List.generate(colCount, (i) {
-          final letter = _colLetter(i);
+        ...List.generate(colCount, (ci) {
           return Container(
-            constraints: const BoxConstraints(minWidth: 80),
-            height: 24,
-            padding: const EdgeInsets.symmetric(horizontal: 8),
+            width: colWidths[ci],
+            height: _colHeaderHeight,
+            alignment: Alignment.center,
             decoration: const BoxDecoration(
-              color: Color(0xFFE0E0E0),
+              color: Color(0xFFE8E8E8),
               border: Border(
                 right: BorderSide(color: _excelBorder),
                 bottom: BorderSide(color: _excelBorder),
               ),
             ),
-            child: Center(
-              child: Text(letter,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF555770),
-                  )),
+            child: Text(
+              _colLetter(ci),
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF555770),
+              ),
             ),
           );
         }),
@@ -250,73 +303,86 @@ class _XlsxViewerScreenState extends State<XlsxViewerScreen> {
   Widget _buildDataRow({
     required int rowIndex,
     required List<Data?> cells,
+    required List<double> colWidths,
     required int colCount,
-    required bool isHeader,
-    required bool isAlt,
+    required bool isFirstRow,
+    required bool isAltRow,
   }) {
-    final bg = isHeader ? _excelHeaderBg : isAlt ? _excelRowAlt : _excelRowBg;
+    // Row 0 = first data row (styled as header)
+    final isHeader = isFirstRow;
+    final rowHeight = isHeader ? _headerRowHeight : _dataRowHeight;
+    final rowBg = isHeader
+        ? _excelGreen
+        : isAltRow
+            ? const Color(0xFFF3FBF4)
+            : Colors.white;
     final textColor = isHeader ? Colors.white : const Color(0xFF1A1A2E);
     final fontWeight = isHeader ? FontWeight.w600 : FontWeight.normal;
+    final fontSize = isHeader ? 12.0 : 12.0;
 
     return Row(
       children: [
-        // Row number
+        // Row number cell
         Container(
-          width: 36,
-          height: isHeader ? 32 : 28,
+          width: _rowNumWidth,
+          height: rowHeight,
+          alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: isHeader ? const Color(0xFF1A5C38) : const Color(0xFFE0E0E0),
-            border: Border(
-              right: const BorderSide(color: _excelBorder),
-              bottom: const BorderSide(color: _excelBorder),
+            color: isHeader ? const Color(0xFF1A5C38) : const Color(0xFFE8E8E8),
+            border: const Border(
+              right: BorderSide(color: _excelBorder),
+              bottom: BorderSide(color: _excelBorder),
             ),
           ),
-          child: Center(
-            child: Text(
-              isHeader ? '' : '${rowIndex}',
-              style: TextStyle(
-                fontSize: 10,
-                color: isHeader ? Colors.white : const Color(0xFF555770),
-              ),
+          child: Text(
+            isHeader ? '' : '${rowIndex}',
+            style: TextStyle(
+              fontSize: 10,
+              color: isHeader ? Colors.white70 : const Color(0xFF888888),
             ),
           ),
         ),
-        ...List.generate(colCount, (colIdx) {
-          final cell = colIdx < cells.length ? cells[colIdx] : null;
+        // Data cells — width is FIXED per column from pre-computed widths
+        ...List.generate(colCount, (ci) {
+          final cell = ci < cells.length ? cells[ci] : null;
           final text = _cellText(cell);
+
+          // Detect number/date alignment
+          final isNumeric = cell?.value is IntCellValue ||
+              cell?.value is DoubleCellValue ||
+              cell?.value is DateCellValue ||
+              cell?.value is DateTimeCellValue;
+
           return Container(
-            constraints: BoxConstraints(minWidth: 80, minHeight: isHeader ? 32 : 28),
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+            width: colWidths[ci],
+            height: rowHeight,
+            alignment: isNumeric && !isHeader
+                ? Alignment.centerRight
+                : Alignment.centerLeft,
+            padding: const EdgeInsets.symmetric(horizontal: 8),
             decoration: BoxDecoration(
-              color: bg,
-              border: Border(
-                right: const BorderSide(color: _excelBorder),
-                bottom: const BorderSide(color: _excelBorder),
+              color: rowBg,
+              border: const Border(
+                right: BorderSide(color: _excelBorder),
+                bottom: BorderSide(color: _excelBorder),
               ),
             ),
-            child: Text(
-              text,
-              style: TextStyle(
-                fontSize: 12,
-                color: textColor,
-                fontWeight: fontWeight,
-              ),
-              overflow: TextOverflow.ellipsis,
-              maxLines: 1,
-            ),
+            child: text.isEmpty
+                ? const SizedBox.shrink()
+                : Text(
+                    text,
+                    style: TextStyle(
+                      fontSize: fontSize,
+                      color: textColor,
+                      fontWeight: fontWeight,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                    softWrap: false,
+                  ),
           );
         }),
       ],
     );
-  }
-
-  String _colLetter(int index) {
-    String result = '';
-    int n = index;
-    do {
-      result = String.fromCharCode(65 + (n % 26)) + result;
-      n = (n ~/ 26) - 1;
-    } while (n >= 0);
-    return result;
   }
 }
