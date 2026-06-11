@@ -49,7 +49,7 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
             pageSnap: false,
             defaultPage: 0,
             fitPolicy: FitPolicy.BOTH,
-            backgroundColor: const Color(0xFF0D0D1A),
+            backgroundColor: const Color(0xFF0F0D06),
             onRender: (pages) => setState(() {
               _totalPages = pages ?? 0;
               _isReady = true;
@@ -64,7 +64,7 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  CircularProgressIndicator(color: Color(0xFF7C4DFF)),
+                  CircularProgressIndicator(color: Color(0xFFD4AF37)),
                   SizedBox(height: 12),
                   Text('Memuat PDF...', style: TextStyle(color: Colors.white54)),
                 ],
@@ -74,7 +74,7 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
       ),
       bottomNavigationBar: _isReady && _totalPages > 1
           ? Container(
-              color: const Color(0xFF1A1A2E),
+              color: const Color(0xFF1C1A0E),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -85,7 +85,7 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
                         ? () => _controller?.setPage(_currentPage - 1)
                         : null,
                     color: _currentPage > 0
-                        ? const Color(0xFF7C4DFF)
+                        ? const Color(0xFFD4AF37)
                         : Colors.white24,
                   ),
                   Text(
@@ -98,7 +98,7 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
                         ? () => _controller?.setPage(_currentPage + 1)
                         : null,
                     color: _currentPage < _totalPages - 1
-                        ? const Color(0xFF7C4DFF)
+                        ? const Color(0xFFD4AF37)
                         : Colors.white24,
                   ),
                 ],

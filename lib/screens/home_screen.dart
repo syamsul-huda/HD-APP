@@ -39,7 +39,7 @@ class _HomeScreenState extends State<HomeScreen> {
     ('Twitter / X', '✕', Color(0xFF888888)),
     ('Reddit', '●', Color(0xFFFF4500)),
     ('Telegram', '✈', Color(0xFF2CA5E0)),
-    ('dan 1000+ lainnya', '∞', Color(0xFF7C4DFF)),
+    ('dan 1000+ lainnya', '∞', Color(0xFFD4AF37)),
   ];
 
   @override
@@ -69,11 +69,11 @@ class _HomeScreenState extends State<HomeScreen> {
       barrierDismissible: false,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) => AlertDialog(
-          backgroundColor: const Color(0xFF1A1A2E),
+          backgroundColor: const Color(0xFF1C1A0E),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: const Row(
             children: [
-              Icon(Icons.system_update, color: Color(0xFF7C4DFF)),
+              Icon(Icons.system_update, color: Color(0xFFD4AF37)),
               SizedBox(width: 8),
               Text('Update Tersedia', style: TextStyle(color: Colors.white)),
             ],
@@ -100,7 +100,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 LinearProgressIndicator(
                   value: _progress,
                   backgroundColor: Colors.white12,
-                  color: const Color(0xFF7C4DFF),
+                  color: const Color(0xFFD4AF37),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -119,7 +119,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF7C4DFF),
+                      backgroundColor: const Color(0xFFD4AF37),
                       minimumSize: Size.zero,
                       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                     ),
@@ -255,7 +255,7 @@ class _HomeScreenState extends State<HomeScreen> {
             'Download selesai!',
             action: SnackBarAction(
               label: 'BUKA',
-              textColor: const Color(0xFF7C4DFF),
+              textColor: const Color(0xFFD4AF37),
               onPressed: () => OpenFilex.open(path),
             ),
           );
@@ -291,7 +291,7 @@ class _HomeScreenState extends State<HomeScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1A1A2E),
+        backgroundColor: const Color(0xFF1C1A0E),
         title: const Text('Pengaturan Backend'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -365,12 +365,12 @@ class _HomeScreenState extends State<HomeScreen> {
             Container(
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
-                color: const Color(0xFF7C4DFF).withOpacity(0.2),
+                color: const Color(0xFFD4AF37).withOpacity(0.2),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: const Icon(
                 Icons.download_rounded,
-                color: Color(0xFF7C4DFF),
+                color: Color(0xFFD4AF37),
                 size: 18,
               ),
             ),
@@ -547,7 +547,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 IconButton(
                   icon: const Icon(Icons.content_paste_rounded, size: 18),
-                  color: const Color(0xFF7C4DFF),
+                  color: const Color(0xFFD4AF37),
                   onPressed: _pasteFromClipboard,
                   tooltip: 'Paste dari clipboard',
                 ),
@@ -614,12 +614,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   fit: BoxFit.cover,
                   placeholder: (_, __) => Container(
                     height: 190,
-                    color: const Color(0xFF0D0D1A),
+                    color: const Color(0xFF0F0D06),
                     child: const Center(child: CircularProgressIndicator()),
                   ),
                   errorWidget: (_, __, ___) => Container(
                     height: 100,
-                    color: const Color(0xFF0D0D1A),
+                    color: const Color(0xFF0F0D06),
                     child: const Center(
                       child: Icon(Icons.broken_image_rounded, size: 40, color: Colors.white24),
                     ),
@@ -651,7 +651,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF7C4DFF).withOpacity(0.85),
+                      color: const Color(0xFFD4AF37).withOpacity(0.85),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
@@ -743,21 +743,21 @@ class _HomeScreenState extends State<HomeScreen> {
                 decoration: BoxDecoration(
                   gradient: selected
                       ? const LinearGradient(
-                          colors: [Color(0xFF7C4DFF), Color(0xFF651FFF)],
+                          colors: [Color(0xFFD4AF37), Color(0xFFB8960C)],
                         )
                       : null,
-                  color: selected ? null : const Color(0xFF1A1A2E),
+                  color: selected ? null : const Color(0xFF1C1A0E),
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
                     color: selected
-                        ? const Color(0xFF7C4DFF)
+                        ? const Color(0xFFD4AF37)
                         : Colors.white12,
                     width: selected ? 1.5 : 1,
                   ),
                   boxShadow: selected
                       ? [
                           BoxShadow(
-                            color: const Color(0xFF7C4DFF).withOpacity(0.3),
+                            color: const Color(0xFFD4AF37).withOpacity(0.3),
                             blurRadius: 8,
                             offset: const Offset(0, 2),
                           )
@@ -784,7 +784,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildDownloadButton() {
     final isAudio = _downloadType == 'audio';
-    final color = isAudio ? const Color(0xFF7C4DFF) : const Color(0xFF00BFA5);
+    final color = isAudio ? const Color(0xFFD4AF37) : const Color(0xFFCE8946);
     final activeTask = _activeTaskFor();
 
     if (activeTask == null) {
@@ -894,7 +894,7 @@ class _HomeScreenState extends State<HomeScreen> {
         const SizedBox(height: 10),
         Container(
           decoration: BoxDecoration(
-            color: const Color(0xFF1A1A2E),
+            color: const Color(0xFF1C1A0E),
             borderRadius: BorderRadius.circular(12),
           ),
           padding: const EdgeInsets.all(4),
@@ -904,13 +904,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 icon: Icons.videocam_rounded,
                 label: 'Video',
                 value: 'video',
-                color: const Color(0xFF00BFA5),
+                color: const Color(0xFFCE8946),
               ),
               _typeTab(
                 icon: Icons.music_note_rounded,
                 label: 'Audio Saja',
                 value: 'audio',
-                color: const Color(0xFF7C4DFF),
+                color: const Color(0xFFD4AF37),
               ),
             ],
           ),
@@ -972,7 +972,7 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     }
 
-    final audioColor = const Color(0xFF7C4DFF);
+    final audioColor = const Color(0xFFD4AF37);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -998,7 +998,7 @@ class _HomeScreenState extends State<HomeScreen> {
               decoration: BoxDecoration(
                 color: selected
                     ? audioColor.withOpacity(0.12)
-                    : const Color(0xFF1A1A2E),
+                    : const Color(0xFF1C1A0E),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   color: selected ? audioColor : Colors.white10,
@@ -1070,8 +1070,8 @@ class _HomeScreenState extends State<HomeScreen> {
     final isFailed = task.status == DownloadStatus.failed;
     final isCancelled = task.status == DownloadStatus.cancelled;
 
-    Color statusColor = const Color(0xFF7C4DFF);
-    if (isDone) statusColor = const Color(0xFF00BFA5);
+    Color statusColor = const Color(0xFFD4AF37);
+    if (isDone) statusColor = const Color(0xFFCE8946);
     if (isFailed) statusColor = Colors.redAccent;
     if (isCancelled) statusColor = Colors.white38;
 
@@ -1079,10 +1079,10 @@ class _HomeScreenState extends State<HomeScreen> {
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFF1A1A2E),
+        color: const Color(0xFF1C1A0E),
         borderRadius: BorderRadius.circular(14),
         border: isDone
-            ? Border.all(color: const Color(0xFF00BFA5).withOpacity(0.25))
+            ? Border.all(color: const Color(0xFFCE8946).withOpacity(0.25))
             : null,
       ),
       child: Row(
@@ -1197,7 +1197,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ] else
                   const Icon(Icons.check_circle_rounded,
-                      color: Color(0xFF00BFA5), size: 24),
+                      color: Color(0xFFCE8946), size: 24),
               ],
             )
           else if (task.isActive)

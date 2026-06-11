@@ -182,7 +182,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
         title: const Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.menu_book_rounded, color: Color(0xFF7C4DFF), size: 20),
+            Icon(Icons.menu_book_rounded, color: Color(0xFFD4AF37), size: 20),
             SizedBox(width: 8),
             Text('Pembaca Dokumen'),
           ],
@@ -266,7 +266,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
           : const Icon(Icons.folder_open_rounded),
       label: Text(_loading ? 'Membuka...' : 'Pilih File Dokumen'),
       style: ElevatedButton.styleFrom(
-        backgroundColor: const Color(0xFF7C4DFF),
+        backgroundColor: const Color(0xFFD4AF37),
         minimumSize: const Size(double.infinity, 52),
       ),
     );
@@ -334,7 +334,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
           margin: const EdgeInsets.only(bottom: 8),
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: const Color(0xFF1A1A2E),
+            color: const Color(0xFF1C1A0E),
             borderRadius: BorderRadius.circular(14),
           ),
           child: Row(
@@ -406,7 +406,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
       case 'ppt': case 'pptx': case 'odp': return const Color(0xFFE65100);
       case 'txt': return const Color(0xFF546E7A);
       case 'csv': return const Color(0xFF00695C);
-      default: return const Color(0xFF7C4DFF);
+      default: return const Color(0xFFD4AF37);
     }
   }
 

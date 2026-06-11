@@ -15,12 +15,12 @@ class DashboardScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
-                color: const Color(0xFF7C4DFF).withOpacity(0.2),
+                color: const Color(0xFFD4AF37).withOpacity(0.2),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: const Icon(
                 Icons.apps_rounded,
-                color: Color(0xFF7C4DFF),
+                color: Color(0xFFD4AF37),
                 size: 18,
               ),
             ),
@@ -53,7 +53,7 @@ class DashboardScreen extends StatelessWidget {
               title: 'Video Downloader',
               description:
                   'Download video dari YouTube, TikTok, Instagram, Facebook, dan 1000+ platform lainnya',
-              accentColor: const Color(0xFF00BFA5),
+              accentColor: const Color(0xFFCE8946),
               tags: const ['YouTube', 'TikTok', 'Instagram', '+1000'],
               onTap: () => Navigator.push(
                 context,
@@ -66,7 +66,7 @@ class DashboardScreen extends StatelessWidget {
               title: 'Pembaca Dokumen',
               description:
                   'Buka dan baca file PDF, Word, Excel, PowerPoint, TXT, CSV, dan format lainnya',
-              accentColor: const Color(0xFF7C4DFF),
+              accentColor: const Color(0xFFD4AF37),
               tags: const ['PDF', 'Word', 'Excel', 'PPT'],
               onTap: () => Navigator.push(
                 context,
