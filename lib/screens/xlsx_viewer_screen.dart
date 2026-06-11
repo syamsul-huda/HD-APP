@@ -1,5 +1,5 @@
 import 'dart:io';
-import 'package:excel/excel.dart';
+import 'package:excel/excel.dart' hide Border;
 import 'package:flutter/material.dart';
 
 class XlsxViewerScreen extends StatefulWidget {
@@ -40,7 +40,7 @@ class _XlsxViewerScreenState extends State<XlsxViewerScreen> {
   String _cellText(Data? cell) {
     if (cell == null || cell.value == null) return '';
     final v = cell.value!;
-    if (v is TextCellValue) return v.value;
+    if (v is TextCellValue) return v.value.text ?? '';
     if (v is IntCellValue) return v.value.toString();
     if (v is DoubleCellValue) return v.value.toStringAsFixed(2).replaceAll(RegExp(r'\.?0+$'), '');
     if (v is BoolCellValue) return v.value ? 'TRUE' : 'FALSE';
