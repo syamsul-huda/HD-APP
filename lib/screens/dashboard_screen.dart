@@ -1,9 +1,107 @@
 import 'package:flutter/material.dart';
+import '../services/update_service.dart';
 import 'home_screen.dart';
 import 'reader_screen.dart';
 
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
+
+  @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _checkUpdate());
+  }
+
+  Future<void> _checkUpdate() async {
+    final update = await UpdateService.checkForUpdate();
+    if (update == null || !mounted) return;
+    _showUpdateDialog(update);
+  }
+
+  void _showUpdateDialog(UpdateInfo update) {
+    double progress = 0;
+    bool downloading = false;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          backgroundColor: const Color(0xFF1C1A0E),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Row(
+            children: [
+              Icon(Icons.system_update, color: Color(0xFFD4AF37)),
+              SizedBox(width: 8),
+              Text('Update Tersedia', style: TextStyle(color: Colors.white)),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Versi ${update.version} sudah tersedia.',
+                style: const TextStyle(color: Colors.white70),
+              ),
+              if (update.releaseNotes.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Text(
+                  update.releaseNotes,
+                  style: const TextStyle(color: Colors.white54, fontSize: 12),
+                  maxLines: 4,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+              if (downloading) ...[
+                const SizedBox(height: 16),
+                LinearProgressIndicator(
+                  value: progress,
+                  backgroundColor: Colors.white12,
+                  color: const Color(0xFFD4AF37),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${(progress * 100).toStringAsFixed(0)}%',
+                  style: const TextStyle(color: Colors.white54, fontSize: 12),
+                ),
+              ],
+            ],
+          ),
+          actions: downloading
+              ? []
+              : [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    child: const Text('Nanti', style: TextStyle(color: Colors.white54)),
+                  ),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFD4AF37),
+                      foregroundColor: const Color(0xFF1C1A0E),
+                      minimumSize: Size.zero,
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                    ),
+                    onPressed: () async {
+                      setDialogState(() => downloading = true);
+                      await UpdateService.downloadAndInstall(
+                        update.downloadUrl,
+                        (p) => setDialogState(() => progress = p),
+                      );
+                      if (ctx.mounted) Navigator.pop(ctx);
+                    },
+                    child: const Text('Update Sekarang'),
+                  ),
+                ],
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {

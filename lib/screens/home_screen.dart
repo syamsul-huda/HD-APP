@@ -7,7 +7,6 @@ import 'package:share_plus/share_plus.dart';
 import '../models/video_info.dart';
 import '../models/download_task.dart';
 import '../services/api_service.dart';
-import '../services/update_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -45,98 +44,12 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _checkUpdate());
   }
 
   @override
   void dispose() {
     _urlCtrl.dispose();
     super.dispose();
-  }
-
-  Future<void> _checkUpdate() async {
-    final update = await UpdateService.checkForUpdate();
-    if (update == null || !mounted) return;
-    _showUpdateDialog(update);
-  }
-
-  void _showUpdateDialog(UpdateInfo update) {
-    double _progress = 0;
-    bool _downloading = false;
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDialogState) => AlertDialog(
-          backgroundColor: const Color(0xFF1C1A0E),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Row(
-            children: [
-              Icon(Icons.system_update, color: Color(0xFFD4AF37)),
-              SizedBox(width: 8),
-              Text('Update Tersedia', style: TextStyle(color: Colors.white)),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Versi ${update.version} sudah tersedia.',
-                style: const TextStyle(color: Colors.white70),
-              ),
-              if (update.releaseNotes.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                Text(
-                  update.releaseNotes,
-                  style: const TextStyle(color: Colors.white54, fontSize: 12),
-                  maxLines: 4,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-              if (_downloading) ...[
-                const SizedBox(height: 16),
-                LinearProgressIndicator(
-                  value: _progress,
-                  backgroundColor: Colors.white12,
-                  color: const Color(0xFFD4AF37),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '${(_progress * 100).toStringAsFixed(0)}%',
-                  style: const TextStyle(color: Colors.white54, fontSize: 12),
-                ),
-              ],
-            ],
-          ),
-          actions: _downloading
-              ? []
-              : [
-                  TextButton(
-                    onPressed: () => Navigator.pop(ctx),
-                    child: const Text('Nanti', style: TextStyle(color: Colors.white54)),
-                  ),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFD4AF37),
-                      minimumSize: Size.zero,
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                    ),
-                    onPressed: () async {
-                      setDialogState(() => _downloading = true);
-                      await UpdateService.downloadAndInstall(
-                        update.downloadUrl,
-                        (p) => setDialogState(() => _progress = p),
-                      );
-                      if (ctx.mounted) Navigator.pop(ctx);
-                    },
-                    child: const Text('Update Sekarang'),
-                  ),
-                ],
-        ),
-      ),
-    );
   }
 
   Future<void> _pasteFromClipboard() async {
