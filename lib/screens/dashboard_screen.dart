@@ -34,13 +34,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
       barrierDismissible: false,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) => AlertDialog(
-          backgroundColor: const Color(0xFF1E2640),
+          backgroundColor: Colors.white,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: const Row(
             children: [
               Icon(Icons.system_update, color: Color(0xFF7B8BFF)),
               SizedBox(width: 8),
-              Text('Update Tersedia', style: TextStyle(color: Colors.white)),
+              Text('Update Tersedia',
+                  style: TextStyle(color: Color(0xFF1A1A2E), fontSize: 17)),
             ],
           ),
           content: Column(
@@ -49,13 +50,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
             children: [
               Text(
                 'Versi ${update.version} sudah tersedia.',
-                style: const TextStyle(color: Colors.white70),
+                style: const TextStyle(color: Color(0xFF555770)),
               ),
               if (update.releaseNotes.isNotEmpty) ...[
                 const SizedBox(height: 8),
                 Text(
                   update.releaseNotes,
-                  style: const TextStyle(color: Colors.white54, fontSize: 12),
+                  style: const TextStyle(color: Color(0xFF9B9FAD), fontSize: 12),
                   maxLines: 4,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -64,13 +65,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 const SizedBox(height: 16),
                 LinearProgressIndicator(
                   value: progress,
-                  backgroundColor: Colors.white12,
+                  backgroundColor: const Color(0xFFE4E7F0),
                   color: const Color(0xFF7B8BFF),
+                  borderRadius: BorderRadius.circular(4),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   '${(progress * 100).toStringAsFixed(0)}%',
-                  style: const TextStyle(color: Colors.white54, fontSize: 12),
+                  style: const TextStyle(color: Color(0xFF9B9FAD), fontSize: 12),
                 ),
               ],
             ],
@@ -80,12 +82,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
               : [
                   TextButton(
                     onPressed: () => Navigator.pop(ctx),
-                    child: const Text('Nanti', style: TextStyle(color: Colors.white54)),
+                    child: const Text('Nanti',
+                        style: TextStyle(color: Color(0xFF9B9FAD))),
                   ),
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF7B8BFF),
-                      foregroundColor: const Color(0xFF1E2640),
+                      foregroundColor: Colors.white,
                       minimumSize: Size.zero,
                       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                     ),
@@ -111,13 +114,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1E2640),
+        backgroundColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Row(
           children: [
             Icon(Icons.settings_rounded, color: Color(0xFF7B8BFF), size: 20),
             SizedBox(width: 8),
-            Text('Pengaturan', style: TextStyle(color: Colors.white)),
+            Text('Pengaturan',
+                style: TextStyle(color: Color(0xFF1A1A2E), fontSize: 17)),
           ],
         ),
         content: Column(
@@ -125,11 +129,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text('URL Backend Server (Video Downloader)',
-                style: TextStyle(fontSize: 12, color: Colors.white60)),
+                style: TextStyle(fontSize: 12, color: Color(0xFF9B9FAD))),
             const SizedBox(height: 8),
             TextField(
               controller: ctrl,
-              style: const TextStyle(fontSize: 14),
+              style: const TextStyle(fontSize: 14, color: Color(0xFF1A1A2E)),
               decoration: const InputDecoration(
                 hintText: 'http://192.168.1.x:8000',
               ),
@@ -139,14 +143,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
               '• Android Emulator: http://10.0.2.2:8000\n'
               '• HP Fisik: http://<IP-Komputer>:8000\n'
               '• iOS Simulator: http://localhost:8000',
-              style: TextStyle(fontSize: 11, color: Colors.white38, height: 1.6),
+              style: TextStyle(fontSize: 11, color: Color(0xFF9B9FAD), height: 1.6),
             ),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Batal', style: TextStyle(color: Colors.white54)),
+            child: const Text('Batal',
+                style: TextStyle(color: Color(0xFF9B9FAD))),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -156,7 +161,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 SnackBar(
                   content: const Text('Backend URL disimpan'),
                   behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10)),
                 ),
               );
             },
@@ -171,36 +177,39 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF5F6FA),
       appBar: AppBar(
+        backgroundColor: Colors.white,
         title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
-                color: const Color(0xFF7B8BFF).withOpacity(0.2),
+                color: const Color(0xFF7B8BFF).withOpacity(0.12),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Icon(
-                Icons.apps_rounded,
-                color: Color(0xFF7B8BFF),
-                size: 18,
-              ),
+              child: const Icon(Icons.apps_rounded, color: Color(0xFF7B8BFF), size: 18),
             ),
             const SizedBox(width: 8),
-            const Text('SuperAppHD'),
+            const Text('SuperAppHD',
+                style: TextStyle(color: Color(0xFF1A1A2E), fontWeight: FontWeight.bold)),
           ],
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.settings_rounded, size: 22),
+            icon: const Icon(Icons.settings_outlined, size: 22, color: Color(0xFF555770)),
             onPressed: _showSettings,
             tooltip: 'Pengaturan',
           ),
         ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(height: 1, color: const Color(0xFFE4E7F0)),
+        ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 40),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(16, 20, 16, 40),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -209,15 +218,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: Color(0xFF1A1A2E),
               ),
             ),
             const SizedBox(height: 4),
             const Text(
               'Apa yang ingin kamu lakukan?',
-              style: TextStyle(fontSize: 13, color: Colors.white38),
+              style: TextStyle(fontSize: 13, color: Color(0xFF9B9FAD)),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
             _FeatureCard(
               icon: Icons.download_rounded,
               title: 'Video Downloader',
@@ -230,7 +239,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 MaterialPageRoute(builder: (_) => const HomeScreen()),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
             _FeatureCard(
               icon: Icons.menu_book_rounded,
               title: 'Pembaca Dokumen',
@@ -243,7 +252,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 MaterialPageRoute(builder: (_) => const ReaderScreen()),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
             _FeatureCard(
               icon: Icons.document_scanner_rounded,
               title: 'Scanner Dokumen',
@@ -288,14 +297,19 @@ class _FeatureCard extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: const Color(0xFF1A1A2E),
+          color: Colors.white,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: accentColor.withOpacity(0.25), width: 1.5),
+          border: Border.all(color: accentColor.withOpacity(0.18), width: 1.5),
           boxShadow: [
             BoxShadow(
               color: accentColor.withOpacity(0.08),
-              blurRadius: 20,
+              blurRadius: 16,
               offset: const Offset(0, 4),
+            ),
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
             ),
           ],
         ),
@@ -307,7 +321,7 @@ class _FeatureCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: accentColor.withOpacity(0.15),
+                    color: accentColor.withOpacity(0.12),
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Icon(icon, color: accentColor, size: 26),
@@ -316,9 +330,9 @@ class _FeatureCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: accentColor.withOpacity(0.12),
+                    color: accentColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: accentColor.withOpacity(0.3)),
+                    border: Border.all(color: accentColor.withOpacity(0.25)),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -338,25 +352,25 @@ class _FeatureCard extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
             Text(
               title,
               style: const TextStyle(
-                fontSize: 18,
+                fontSize: 17,
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: Color(0xFF1A1A2E),
               ),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 5),
             Text(
               description,
               style: const TextStyle(
                 fontSize: 13,
-                color: Colors.white54,
+                color: Color(0xFF9B9FAD),
                 height: 1.4,
               ),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 12),
             Wrap(
               spacing: 6,
               children: tags.map((tag) {
@@ -371,7 +385,7 @@ class _FeatureCard extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w500,
-                      color: accentColor.withOpacity(0.8),
+                      color: accentColor,
                     ),
                   ),
                 );

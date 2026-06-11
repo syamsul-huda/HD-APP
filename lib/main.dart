@@ -18,37 +18,44 @@ class App extends StatelessWidget {
     return MaterialApp(
       title: 'SuperAppHD',
       debugShowCheckedModeBanner: false,
-      themeMode: ThemeMode.dark,
-      darkTheme: ThemeData(
+      themeMode: ThemeMode.light,
+      theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xFF7B8BFF),
-          brightness: Brightness.dark,
+          brightness: Brightness.light,
         ),
         useMaterial3: true,
-        scaffoldBackgroundColor: const Color(0xFF151929),
+        scaffoldBackgroundColor: const Color(0xFFF5F6FA),
         appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFF151929),
+          backgroundColor: Colors.white,
           elevation: 0,
+          scrolledUnderElevation: 1,
+          shadowColor: Color(0x14000000),
           centerTitle: true,
           titleTextStyle: TextStyle(
-            fontSize: 20,
+            fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: Colors.white,
+            color: Color(0xFF1A1A2E),
           ),
+          iconTheme: IconThemeData(color: Color(0xFF1A1A2E)),
         ),
         inputDecorationTheme: InputDecorationTheme(
           filled: true,
-          fillColor: const Color(0xFF1E2640),
+          fillColor: const Color(0xFFF5F6FA),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide.none,
+            borderSide: const BorderSide(color: Color(0xFFE4E7F0)),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Color(0xFFE4E7F0)),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
             borderSide: const BorderSide(color: Color(0xFF7B8BFF), width: 1.5),
           ),
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          hintStyle: const TextStyle(color: Color(0xFF9B9FAD)),
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
@@ -65,13 +72,18 @@ class App extends StatelessWidget {
             ),
           ),
         ),
-        cardTheme: const CardTheme(
-          color: Color(0xFF1E2640),
-          elevation: 0,
-          shape: RoundedRectangleBorder(
+        textButtonTheme: TextButtonThemeData(
+          style: TextButton.styleFrom(foregroundColor: const Color(0xFF7B8BFF)),
+        ),
+        cardTheme: CardTheme(
+          color: Colors.white,
+          elevation: 2,
+          shadowColor: Colors.black.withOpacity(0.08),
+          shape: const RoundedRectangleBorder(
             borderRadius: BorderRadius.all(Radius.circular(16)),
           ),
         ),
+        dividerColor: const Color(0xFFE4E7F0),
       ),
       home: const DashboardScreen(),
     );

@@ -27,8 +27,8 @@ class _ReaderScreenState extends State<ReaderScreen> {
   static const _formats = [
     ('PDF', Icons.picture_as_pdf_rounded, Color(0xFFE53935)),
     ('Word', Icons.article_rounded, Color(0xFF1565C0)),
-    ('Excel', Icons.table_chart_rounded, Color(0xFF2E7D32)),
-    ('PPT', Icons.slideshow_rounded, Color(0xFFE65100)),
+    ('Excel', Icons.table_chart_rounded, Color(0xFF217346)),
+    ('PPT', Icons.slideshow_rounded, Color(0xFFD24726)),
     ('TXT', Icons.text_snippet_rounded, Color(0xFF546E7A)),
     ('CSV', Icons.grid_on_rounded, Color(0xFF00695C)),
   ];
@@ -45,7 +45,6 @@ class _ReaderScreenState extends State<ReaderScreen> {
     if (raw == null) return;
     try {
       final list = RecentFile.decodeList(raw);
-      // Filter file yang masih ada
       final valid = <RecentFile>[];
       for (final f in list) {
         if (await File(f.path).exists()) valid.add(f);
@@ -101,7 +100,6 @@ class _ReaderScreenState extends State<ReaderScreen> {
   Future<void> _openFile(PlatformFile file) async {
     String? path = file.path;
 
-    // Fallback: salin ke direktori temp jika path null (Android 13+ edge case)
     if (path == null && file.bytes != null) {
       final dir = await getTemporaryDirectory();
       final tmp = File('${dir.path}/${file.name}');
@@ -166,7 +164,6 @@ class _ReaderScreenState extends State<ReaderScreen> {
       return;
     }
 
-    // Format binary lama (.doc, .xls, .ppt) → buka dengan app sistem
     final result = await OpenFilex.open(path);
     if (result.type != ResultType.done && mounted) {
       _snack('Format .${ext.toUpperCase()} tidak didukung secara langsung. Install WPS Office untuk membukanya.');
@@ -191,26 +188,32 @@ class _ReaderScreenState extends State<ReaderScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF5F6FA),
       appBar: AppBar(
+        backgroundColor: Colors.white,
         title: const Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.menu_book_rounded, color: Color(0xFF7B8BFF), size: 20),
+            Icon(Icons.menu_book_rounded, color: Color(0xFF4ECDC4), size: 20),
             SizedBox(width: 8),
             Text('Pembaca Dokumen'),
           ],
         ),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(height: 1, color: const Color(0xFFE4E7F0)),
+        ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildFormatsSection(),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
             _buildPickButton(),
             if (_recent.isNotEmpty) ...[
-              const SizedBox(height: 28),
+              const SizedBox(height: 24),
               _buildRecentSection(),
             ],
           ],
@@ -220,50 +223,64 @@ class _ReaderScreenState extends State<ReaderScreen> {
   }
 
   Widget _buildFormatsSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'FORMAT YANG DIDUKUNG',
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-            color: Colors.white38,
-            letterSpacing: 1,
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
-        ),
-        const SizedBox(height: 10),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: _formats.map((f) {
-            final (label, icon, color) = f;
-            return Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: color.withOpacity(0.3)),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(icon, size: 13, color: color),
-                  const SizedBox(width: 5),
-                  Text(
-                    label,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: color.withOpacity(0.9),
-                      fontWeight: FontWeight.w500,
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'FORMAT YANG DIDUKUNG',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF9B9FAD),
+              letterSpacing: 1,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: _formats.map((f) {
+              final (label, icon, color) = f;
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: color.withOpacity(0.2)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(icon, size: 14, color: color),
+                    const SizedBox(width: 5),
+                    Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: color,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            );
-          }).toList(),
-        ),
-      ],
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
     );
   }
 
@@ -279,7 +296,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
           : const Icon(Icons.folder_open_rounded),
       label: Text(_loading ? 'Membuka...' : 'Pilih File Dokumen'),
       style: ElevatedButton.styleFrom(
-        backgroundColor: const Color(0xFF7B8BFF),
+        backgroundColor: const Color(0xFF4ECDC4),
         minimumSize: const Size(double.infinity, 52),
       ),
     );
@@ -291,11 +308,14 @@ class _ReaderScreenState extends State<ReaderScreen> {
       children: [
         Row(
           children: [
-            const Icon(Icons.history_rounded, size: 18, color: Colors.white60),
+            const Icon(Icons.history_rounded, size: 18, color: Color(0xFF9B9FAD)),
             const SizedBox(width: 6),
             const Text(
               'Baru Dibuka',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1A1A2E)),
             ),
             const Spacer(),
             TextButton(
@@ -305,7 +325,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
               },
               child: const Text(
                 'Hapus Semua',
-                style: TextStyle(fontSize: 12, color: Colors.white38),
+                style: TextStyle(fontSize: 12, color: Color(0xFF9B9FAD)),
               ),
             ),
           ],
@@ -335,7 +355,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
         padding: const EdgeInsets.only(right: 16),
         margin: const EdgeInsets.only(bottom: 8),
         decoration: BoxDecoration(
-          color: Colors.red.withOpacity(0.15),
+          color: Colors.red.withOpacity(0.1),
           borderRadius: BorderRadius.circular(14),
         ),
         child: const Icon(Icons.delete_rounded, color: Colors.redAccent),
@@ -347,8 +367,15 @@ class _ReaderScreenState extends State<ReaderScreen> {
           margin: const EdgeInsets.only(bottom: 8),
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: const Color(0xFF1E2640),
+            color: Colors.white,
             borderRadius: BorderRadius.circular(14),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.04),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           child: Row(
             children: [
@@ -356,7 +383,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.15),
+                  color: color.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(icon, color: color, size: 22),
@@ -373,6 +400,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
                       style: const TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
+                        color: Color(0xFF1A1A2E),
                       ),
                     ),
                     const SizedBox(height: 3),
@@ -381,7 +409,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
-                            color: color.withOpacity(0.15),
+                            color: color.withOpacity(0.12),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
@@ -396,14 +424,16 @@ class _ReaderScreenState extends State<ReaderScreen> {
                         const SizedBox(width: 8),
                         Text(
                           timeStr,
-                          style: const TextStyle(fontSize: 11, color: Colors.white38),
+                          style: const TextStyle(
+                              fontSize: 11, color: Color(0xFF9B9FAD)),
                         ),
                       ],
                     ),
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right_rounded, color: Colors.white24, size: 18),
+              const Icon(Icons.chevron_right_rounded,
+                  color: Color(0xFFBDBDBD), size: 18),
             ],
           ),
         ),
@@ -415,8 +445,8 @@ class _ReaderScreenState extends State<ReaderScreen> {
     switch (ext) {
       case 'pdf': return const Color(0xFFE53935);
       case 'doc': case 'docx': case 'odt': return const Color(0xFF1565C0);
-      case 'xls': case 'xlsx': case 'ods': return const Color(0xFF2E7D32);
-      case 'ppt': case 'pptx': case 'odp': return const Color(0xFFE65100);
+      case 'xls': case 'xlsx': case 'ods': return const Color(0xFF217346);
+      case 'ppt': case 'pptx': case 'odp': return const Color(0xFFD24726);
       case 'txt': return const Color(0xFF546E7A);
       case 'csv': return const Color(0xFF00695C);
       default: return const Color(0xFF7B8BFF);
@@ -447,16 +477,22 @@ class _TextViewerScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(title, overflow: TextOverflow.ellipsis)),
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        title: Text(title,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(color: Color(0xFF1A1A2E))),
+      ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: SelectableText(
           content,
           style: const TextStyle(
-            fontSize: 13,
-            height: 1.6,
+            fontSize: 14,
+            height: 1.7,
             fontFamily: 'monospace',
-            color: Colors.white70,
+            color: Color(0xFF1A1A2E),
           ),
         ),
       ),

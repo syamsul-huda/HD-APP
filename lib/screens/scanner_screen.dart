@@ -20,7 +20,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
 
   static const _docTypes = [
     ('KTP', Icons.credit_card_rounded, Color(0xFF1565C0)),
-    ('Ijazah', Icons.school_rounded, Color(0xFF2E7D32)),
+    ('Ijazah', Icons.school_rounded, Color(0xFF217346)),
     ('SIM', Icons.directions_car_rounded, Color(0xFFE65100)),
     ('Sertifikat', Icons.workspace_premium_rounded, Color(0xFF7B8BFF)),
     ('Dokumen Lain', Icons.description_rounded, Color(0xFF546E7A)),
@@ -102,11 +102,13 @@ class _ScannerScreenState extends State<ScannerScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF5F6FA),
       appBar: AppBar(
+        backgroundColor: Colors.white,
         title: const Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.document_scanner_rounded, color: Color(0xFF4ECDC4), size: 20),
+            Icon(Icons.document_scanner_rounded, color: Color(0xFFFF6B9D), size: 20),
             SizedBox(width: 8),
             Text('Scanner Dokumen'),
           ],
@@ -117,9 +119,13 @@ class _ScannerScreenState extends State<ScannerScreen> {
               onPressed: _startScan,
               icon: const Icon(Icons.refresh_rounded, size: 16),
               label: const Text('Scan Ulang'),
-              style: TextButton.styleFrom(foregroundColor: const Color(0xFF7B8BFF)),
+              style: TextButton.styleFrom(foregroundColor: const Color(0xFFFF6B9D)),
             ),
         ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(height: 1, color: const Color(0xFFE4E7F0)),
+        ),
       ),
       body: _pages.isEmpty ? _buildEmpty() : _buildResult(),
     );
@@ -127,7 +133,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
 
   Widget _buildEmpty() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -136,39 +142,51 @@ class _ScannerScreenState extends State<ScannerScreen> {
             onTap: _startScan,
             child: Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 32),
+              padding: const EdgeInsets.symmetric(vertical: 36),
               decoration: BoxDecoration(
-                color: const Color(0xFF1E2640),
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: const Color(0xFF4ECDC4).withOpacity(0.4), width: 1.5),
+                border: Border.all(
+                    color: const Color(0xFFFF6B9D).withOpacity(0.3), width: 1.5),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFFFF6B9D).withOpacity(0.08),
+                    blurRadius: 16,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
               child: Column(
                 children: [
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF4ECDC4).withOpacity(0.15),
+                      color: const Color(0xFFFF6B9D).withOpacity(0.1),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(Icons.document_scanner_rounded,
-                        color: Color(0xFF4ECDC4), size: 48),
+                        color: Color(0xFFFF6B9D), size: 48),
                   ),
                   const SizedBox(height: 16),
                   const Text('Mulai Scan',
                       style: TextStyle(
-                          fontSize: 18, fontWeight: FontWeight.bold,
-                          color: Color(0xFF4ECDC4))),
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFFFF6B9D))),
                   const SizedBox(height: 6),
                   const Text('Tap untuk membuka kamera',
-                      style: TextStyle(fontSize: 13, color: Colors.white38)),
+                      style: TextStyle(fontSize: 13, color: Color(0xFF9B9FAD))),
                 ],
               ),
             ),
           ),
           const SizedBox(height: 24),
           const Text('JENIS DOKUMEN YANG BISA DISCAN',
-              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600,
-                  color: Colors.white38, letterSpacing: 1)),
+              style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF9B9FAD),
+                  letterSpacing: 1)),
           const SizedBox(height: 12),
           Wrap(
             spacing: 8,
@@ -178,9 +196,9 @@ class _ScannerScreenState extends State<ScannerScreen> {
               return Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  color: color.withOpacity(0.08),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: color.withOpacity(0.3)),
+                  border: Border.all(color: color.withOpacity(0.25)),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -188,7 +206,9 @@ class _ScannerScreenState extends State<ScannerScreen> {
                     Icon(icon, size: 14, color: color),
                     const SizedBox(width: 6),
                     Text(label,
-                        style: TextStyle(fontSize: 12, color: color,
+                        style: TextStyle(
+                            fontSize: 12,
+                            color: color,
                             fontWeight: FontWeight.w500)),
                   ],
                 ),
@@ -198,10 +218,10 @@ class _ScannerScreenState extends State<ScannerScreen> {
           const SizedBox(height: 24),
           _buildTip(Icons.wb_sunny_rounded, 'Gunakan pencahayaan yang cukup',
               'Pastikan dokumen terang dan tidak ada bayangan'),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           _buildTip(Icons.crop_free_rounded, 'Posisikan dengan benar',
               'Letakkan dokumen di permukaan datar dan rata'),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           _buildTip(Icons.hd_rounded, 'Pegang kamera stabil',
               'Hindari guncangan untuk hasil scan yang tajam'),
         ],
@@ -211,22 +231,42 @@ class _ScannerScreenState extends State<ScannerScreen> {
 
   Widget _buildTip(IconData icon, String title, String desc) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E2640),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         children: [
-          Icon(icon, color: const Color(0xFF7B8BFF), size: 20),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFF6B9D).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, color: const Color(0xFFFF6B9D), size: 20),
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(
-                    fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white70)),
-                Text(desc, style: const TextStyle(fontSize: 11, color: Colors.white38)),
+                Text(title,
+                    style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF1A1A2E))),
+                const SizedBox(height: 2),
+                Text(desc,
+                    style: const TextStyle(
+                        fontSize: 11, color: Color(0xFF9B9FAD))),
               ],
             ),
           ),
@@ -241,13 +281,25 @@ class _ScannerScreenState extends State<ScannerScreen> {
         // Preview halaman aktif
         Expanded(
           child: Container(
-            color: const Color(0xFF151929),
+            color: const Color(0xFFE8E8E8),
             child: PageView.builder(
               itemCount: _pages.length,
               onPageChanged: (i) => setState(() => _viewPage = i),
               itemBuilder: (_, i) => InteractiveViewer(
                 child: Center(
-                  child: Image.file(File(_pages[i]), fit: BoxFit.contain),
+                  child: Container(
+                    margin: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.2),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Image.file(File(_pages[i]), fit: BoxFit.contain),
+                  ),
                 ),
               ),
             ),
@@ -256,8 +308,8 @@ class _ScannerScreenState extends State<ScannerScreen> {
         // Thumbnail strip
         if (_pages.length > 1)
           Container(
-            height: 72,
-            color: const Color(0xFF1E2640),
+            height: 80,
+            color: Colors.white,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.all(8),
@@ -270,15 +322,15 @@ class _ScannerScreenState extends State<ScannerScreen> {
                     borderRadius: BorderRadius.circular(6),
                     border: Border.all(
                       color: i == _viewPage
-                          ? const Color(0xFF7B8BFF)
-                          : Colors.transparent,
+                          ? const Color(0xFFFF6B9D)
+                          : const Color(0xFFE4E7F0),
                       width: 2,
                     ),
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(4),
                     child: Image.file(File(_pages[i]),
-                        width: 48, height: 56, fit: BoxFit.cover),
+                        width: 52, height: 64, fit: BoxFit.cover),
                   ),
                 ),
               ),
@@ -286,28 +338,36 @@ class _ScannerScreenState extends State<ScannerScreen> {
           ),
         // Action bar
         Container(
-          padding: const EdgeInsets.fromLTRB(16, 10, 16, 24),
-          color: const Color(0xFF1E2640),
-          child: Row(
-            children: [
-              Text('${_pages.length} halaman',
-                  style: const TextStyle(color: Colors.white38, fontSize: 12)),
-              const Spacer(),
-              _saving
-                  ? const SizedBox(
-                      width: 20, height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2,
-                          color: Color(0xFF7B8BFF)))
-                  : Row(
-                      children: [
-                        _actionBtn(Icons.image_rounded, 'Simpan JPG',
-                            _saveAsImages, const Color(0xFF8FA4FF)),
-                        const SizedBox(width: 10),
-                        _actionBtn(Icons.picture_as_pdf_rounded, 'Simpan PDF',
-                            _saveAsPdf, const Color(0xFF4ECDC4)),
-                      ],
-                    ),
-            ],
+          color: Colors.white,
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+          child: SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Row(
+                children: [
+                  Text('${_pages.length} halaman',
+                      style: const TextStyle(
+                          color: Color(0xFF9B9FAD), fontSize: 12)),
+                  const Spacer(),
+                  _saving
+                      ? const SizedBox(
+                          width: 24, height: 24,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2.5,
+                              color: Color(0xFF7B8BFF)))
+                      : Row(
+                          children: [
+                            _actionBtn(Icons.image_rounded, 'Simpan JPG',
+                                _saveAsImages, const Color(0xFF7B8BFF)),
+                            const SizedBox(width: 10),
+                            _actionBtn(Icons.picture_as_pdf_rounded, 'Simpan PDF',
+                                _saveAsPdf, const Color(0xFFFF6B9D)),
+                          ],
+                        ),
+                ],
+              ),
+            ),
           ),
         ),
       ],
@@ -318,19 +378,22 @@ class _ScannerScreenState extends State<ScannerScreen> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.15),
+          color: color.withOpacity(0.1),
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: color.withOpacity(0.4)),
+          border: Border.all(color: color.withOpacity(0.3)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(icon, size: 16, color: color),
             const SizedBox(width: 6),
-            Text(label, style: TextStyle(
-                fontSize: 12, color: color, fontWeight: FontWeight.w600)),
+            Text(label,
+                style: TextStyle(
+                    fontSize: 12,
+                    color: color,
+                    fontWeight: FontWeight.w600)),
           ],
         ),
       ),

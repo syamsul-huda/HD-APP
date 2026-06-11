@@ -204,7 +204,7 @@ class _HomeScreenState extends State<HomeScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1E2640),
+        backgroundColor: Colors.white,
         title: const Text('Pengaturan Backend'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -227,7 +227,7 @@ class _HomeScreenState extends State<HomeScreen> {
               '• Android Emulator: http://10.0.2.2:8000\n'
               '• HP Fisik: http://<IP-Komputer>:8000\n'
               '• iOS Simulator: http://localhost:8000',
-              style: TextStyle(fontSize: 11, color: Colors.white38, height: 1.6),
+              style: TextStyle(fontSize: 11, color: const Color(0xFF9B9FAD), height: 1.6),
             ),
           ],
         ),
@@ -331,7 +331,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   const Icon(
                     Icons.history_rounded,
                     size: 18,
-                    color: Colors.white60,
+                    color: Color(0xFF9B9FAD),
                   ),
                   const SizedBox(width: 6),
                   const Text(
@@ -339,6 +339,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
+                      color: Color(0xFF1A1A2E),
                     ),
                   ),
                   const Spacer(),
@@ -348,7 +349,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     child: const Text(
                       'Hapus Selesai',
-                      style: TextStyle(fontSize: 12, color: Colors.white38),
+                      style: TextStyle(fontSize: 12, color: Color(0xFF9B9FAD)),
                     ),
                   ),
                 ],
@@ -371,7 +372,7 @@ class _HomeScreenState extends State<HomeScreen> {
           style: TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w600,
-            color: Colors.white38,
+            color: const Color(0xFF9B9FAD),
             letterSpacing: 1,
           ),
         ),
@@ -422,7 +423,7 @@ class _HomeScreenState extends State<HomeScreen> {
           style: TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w600,
-            color: Colors.white38,
+            color: const Color(0xFF9B9FAD),
             letterSpacing: 1,
           ),
         ),
@@ -444,7 +445,7 @@ class _HomeScreenState extends State<HomeScreen> {
           decoration: InputDecoration(
             hintText: 'Paste URL video di sini...',
             hintStyle: const TextStyle(color: Colors.white24),
-            prefixIcon: const Icon(Icons.link_rounded, color: Colors.white38, size: 20),
+            prefixIcon: const Icon(Icons.link_rounded, color: const Color(0xFF9B9FAD), size: 20),
             suffixIcon: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -527,12 +528,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   fit: BoxFit.cover,
                   placeholder: (_, __) => Container(
                     height: 190,
-                    color: const Color(0xFF151929),
+                    color: const Color(0xFFF5F6FA),
                     child: const Center(child: CircularProgressIndicator()),
                   ),
                   errorWidget: (_, __, ___) => Container(
                     height: 100,
-                    color: const Color(0xFF151929),
+                    color: const Color(0xFFF5F6FA),
                     child: const Center(
                       child: Icon(Icons.broken_image_rounded, size: 40, color: Colors.white24),
                     ),
@@ -638,7 +639,7 @@ class _HomeScreenState extends State<HomeScreen> {
           style: TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w600,
-            color: Colors.white38,
+            color: const Color(0xFF9B9FAD),
             letterSpacing: 1,
           ),
         ),
@@ -659,12 +660,12 @@ class _HomeScreenState extends State<HomeScreen> {
                           colors: [Color(0xFF7B8BFF), Color(0xFF5B6CF5)],
                         )
                       : null,
-                  color: selected ? null : const Color(0xFF1E2640),
+                  color: selected ? null : const Color(0xFFF5F6FA),
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
                     color: selected
                         ? const Color(0xFF7B8BFF)
-                        : Colors.white12,
+                        : const Color(0xFFE4E7F0),
                     width: selected ? 1.5 : 1,
                   ),
                   boxShadow: selected
@@ -682,7 +683,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
-                    color: selected ? Colors.white : Colors.white70,
+                    color: selected ? Colors.white : const Color(0xFF555770),
                   ),
                 ),
               ),
@@ -800,14 +801,14 @@ class _HomeScreenState extends State<HomeScreen> {
           style: TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w600,
-            color: Colors.white38,
+            color: const Color(0xFF9B9FAD),
             letterSpacing: 1,
           ),
         ),
         const SizedBox(height: 10),
         Container(
           decoration: BoxDecoration(
-            color: const Color(0xFF1E2640),
+            color: Colors.white,
             borderRadius: BorderRadius.circular(12),
           ),
           padding: const EdgeInsets.all(4),
@@ -880,7 +881,7 @@ class _HomeScreenState extends State<HomeScreen> {
         padding: EdgeInsets.symmetric(vertical: 8),
         child: Text(
           'Format audio tidak tersedia untuk video ini.',
-          style: TextStyle(color: Colors.white38, fontSize: 13),
+          style: TextStyle(color: const Color(0xFF9B9FAD), fontSize: 13),
         ),
       );
     }
@@ -895,7 +896,7 @@ class _HomeScreenState extends State<HomeScreen> {
           style: TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w600,
-            color: Colors.white38,
+            color: const Color(0xFF9B9FAD),
             letterSpacing: 1,
           ),
         ),
@@ -911,10 +912,10 @@ class _HomeScreenState extends State<HomeScreen> {
               decoration: BoxDecoration(
                 color: selected
                     ? audioColor.withOpacity(0.12)
-                    : const Color(0xFF1E2640),
+                    : const Color(0xFFF5F6FA),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: selected ? audioColor : Colors.white10,
+                  color: selected ? audioColor : const Color(0xFFE4E7F0),
                   width: selected ? 1.5 : 1,
                 ),
               ),
@@ -926,16 +927,16 @@ class _HomeScreenState extends State<HomeScreen> {
                     decoration: BoxDecoration(
                       color: selected
                           ? audioColor.withOpacity(0.2)
-                          : Colors.white10,
+                          : const Color(0xFFEEEEF5),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Center(
                       child: Text(
-                        fmt.quality, // 'MP3', 'M4A', 'Opus'
+                        fmt.quality,
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
-                          color: selected ? audioColor : Colors.white54,
+                          color: selected ? audioColor : const Color(0xFF9B9FAD),
                         ),
                       ),
                     ),
@@ -950,7 +951,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
-                            color: selected ? Colors.white : Colors.white70,
+                            color: selected ? const Color(0xFF1A1A2E) : const Color(0xFF555770),
                           ),
                         ),
                         if (fmt.description != null)
@@ -958,7 +959,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             fmt.description!,
                             style: const TextStyle(
                               fontSize: 11,
-                              color: Colors.white38,
+                              color: const Color(0xFF9B9FAD),
                             ),
                           ),
                       ],
@@ -986,13 +987,13 @@ class _HomeScreenState extends State<HomeScreen> {
     Color statusColor = const Color(0xFF7B8BFF);
     if (isDone) statusColor = const Color(0xFF4ECDC4);
     if (isFailed) statusColor = Colors.redAccent;
-    if (isCancelled) statusColor = Colors.white38;
+    if (isCancelled) statusColor = const Color(0xFF9B9FAD);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E2640),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(14),
         border: isDone
             ? Border.all(color: const Color(0xFF4ECDC4).withOpacity(0.25))
@@ -1077,7 +1078,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     borderRadius: BorderRadius.circular(4),
                     child: LinearProgressIndicator(
                       value: task.progress > 0 ? task.progress : null,
-                      backgroundColor: Colors.white10,
+                      backgroundColor: const Color(0xFFE4E7F0),
                       color: statusColor,
                       minHeight: 5,
                     ),
@@ -1153,7 +1154,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }) {
     return IconButton(
       icon: Icon(icon, size: 20),
-      color: color ?? Colors.white54,
+      color: color ?? const Color(0xFF9B9FAD),
       onPressed: onTap,
       tooltip: tooltip,
       padding: EdgeInsets.zero,
