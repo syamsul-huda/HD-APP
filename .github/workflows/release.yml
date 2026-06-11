@@ -42,9 +42,9 @@ jobs:
       - name: Build APK
         run: flutter build apk --release
         env:
-          KEY_STORE_PASSWORD: hdapp123
-          KEY_PASSWORD: hdapp123
-          KEY_ALIAS: hdapp
+          KEY_STORE_PASSWORD: ${{ secrets.KEY_STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
 
       - name: Rename APK
         run: mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/HD-APP-${{ github.ref_name }}.apk
