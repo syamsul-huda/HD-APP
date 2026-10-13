@@ -1,8 +1,14 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../models/recent_file.dart';
 import '../services/api_service.dart';
 import '../services/app_settings.dart';
 import '../services/update_service.dart';
+import '../utils/app_theme.dart';
 import 'home_screen.dart';
+import 'pdf_viewer_screen.dart';
 import 'reader_screen.dart';
 import 'scanner_screen.dart';
 
@@ -15,8 +21,12 @@ class _Feature {
   final List<String> tags;
   final VoidCallback onTap;
   const _Feature({
-    required this.icon, required this.title, required this.description,
-    required this.accentColor, required this.tags, required this.onTap,
+    required this.icon,
+    required this.title,
+    required this.description,
+    required this.accentColor,
+    required this.tags,
+    required this.onTap,
   });
 }
 
@@ -28,9 +38,12 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
+  List<_RecentItem> _recent = [];
+
   @override
   void initState() {
     super.initState();
+    _loadRecent();
     WidgetsBinding.instance.addPostFrameCallback((_) => _checkUpdate());
   }
 
@@ -46,30 +59,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
           title: 'Video Downloader',
           description:
               'Download video dari YouTube, TikTok, Instagram, Facebook, dan 1000+ platform lainnya',
-          accentColor: const Color(0xFF7B8BFF),
+          accentColor: AppTheme.downloaderColor,
           tags: const ['YouTube', 'TikTok', 'Instagram', '+1000'],
-          onTap: () => Navigator.push(
-              context, MaterialPageRoute(builder: (_) => const HomeScreen())),
+          onTap: () => _push(const HomeScreen()),
         ),
         _Feature(
           icon: Icons.menu_book_rounded,
           title: 'Pembaca Dokumen',
           description:
               'Buka PDF, Word, Excel, PowerPoint, TXT langsung in-app tanpa aplikasi lain',
-          accentColor: const Color(0xFF4ECDC4),
+          accentColor: AppTheme.readerColor,
           tags: const ['PDF', 'Word', 'Excel', 'PPT'],
-          onTap: () => Navigator.push(
-              context, MaterialPageRoute(builder: (_) => const ReaderScreen())),
+          onTap: () => _push(const ReaderScreen()),
         ),
         _Feature(
           icon: Icons.document_scanner_rounded,
           title: 'Scanner Dokumen',
           description:
               'Scan KTP, ijazah, SIM, sertifikat, dan dokumen lainnya. Simpan sebagai PDF atau JPG',
-          accentColor: const Color(0xFFFF6B9D),
+          accentColor: AppTheme.scannerColor,
           tags: const ['KTP', 'Ijazah', 'SIM', 'Sertifikat'],
-          onTap: () => Navigator.push(
-              context, MaterialPageRoute(builder: (_) => const ScannerScreen())),
+          onTap: () => _push(const ScannerScreen()),
         ),
       ];
 
@@ -84,7 +94,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
           final isDark = Theme.of(ctx).brightness == Brightness.dark;
           return AlertDialog(
             backgroundColor: isDark ? const Color(0xFF1E2640) : Colors.white,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             title: Row(children: [
               const Icon(Icons.system_update, color: Color(0xFF7B8BFF)),
               const SizedBox(width: 8),
@@ -93,28 +104,44 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       color: isDark ? Colors.white : const Color(0xFF1A1A2E),
                       fontSize: 17)),
             ]),
-            content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('Versi ${update.version} sudah tersedia.',
-                  style: TextStyle(color: isDark ? Colors.white70 : const Color(0xFF555770))),
-              if (update.releaseNotes.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                Text(update.releaseNotes,
-                    style: TextStyle(color: isDark ? Colors.white38 : const Color(0xFF9B9FAD), fontSize: 12),
-                    maxLines: 4, overflow: TextOverflow.ellipsis),
-              ],
-              if (downloading) ...[
-                const SizedBox(height: 16),
-                LinearProgressIndicator(
-                  value: progress,
-                  backgroundColor: isDark ? Colors.white12 : const Color(0xFFE4E7F0),
-                  color: const Color(0xFF7B8BFF),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                const SizedBox(height: 4),
-                Text('${(progress * 100).toStringAsFixed(0)}%',
-                    style: TextStyle(color: isDark ? Colors.white54 : const Color(0xFF9B9FAD), fontSize: 12)),
-              ],
-            ]),
+            content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Versi ${update.version} sudah tersedia.',
+                      style: TextStyle(
+                          color: isDark
+                              ? Colors.white70
+                              : const Color(0xFF555770))),
+                  if (update.releaseNotes.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Text(update.releaseNotes,
+                        style: TextStyle(
+                            color: isDark
+                                ? Colors.white38
+                                : const Color(0xFF9B9FAD),
+                            fontSize: 12),
+                        maxLines: 4,
+                        overflow: TextOverflow.ellipsis),
+                  ],
+                  if (downloading) ...[
+                    const SizedBox(height: 16),
+                    LinearProgressIndicator(
+                      value: progress,
+                      backgroundColor:
+                          isDark ? Colors.white12 : const Color(0xFFE4E7F0),
+                      color: const Color(0xFF7B8BFF),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    const SizedBox(height: 4),
+                    Text('${(progress * 100).toStringAsFixed(0)}%',
+                        style: TextStyle(
+                            color: isDark
+                                ? Colors.white54
+                                : const Color(0xFF9B9FAD),
+                            fontSize: 12)),
+                  ],
+                ]),
             actions: downloading
                 ? []
                 : [
@@ -122,14 +149,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       onPressed: () => Navigator.pop(ctx),
                       child: Text('Nanti',
                           style: TextStyle(
-                              color: isDark ? Colors.white38 : const Color(0xFF9B9FAD))),
+                              color: isDark
+                                  ? Colors.white38
+                                  : const Color(0xFF9B9FAD))),
                     ),
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF7B8BFF),
                           foregroundColor: Colors.white,
                           minimumSize: Size.zero,
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10)),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 20, vertical: 10)),
                       onPressed: () async {
                         set(() => downloading = true);
                         await UpdateService.downloadAndInstall(
@@ -153,267 +183,436 @@ class _DashboardScreenState extends State<DashboardScreen> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+        padding:
+            EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
         child: const _SettingsSheet(),
       ),
     );
   }
 
+  // ── Recent documents ────────────────────────────────────────────────────────
+  Future<void> _loadRecent() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(RecentFile.prefKey);
+    final items = <_RecentItem>[];
+    if (raw != null) {
+      try {
+        for (final f in RecentFile.decodeList(raw)) {
+          if (items.length >= 5) break;
+          if (!await File(f.path).exists()) continue;
+          final page = f.extension == 'pdf'
+              ? await PdfViewerScreen.lastReadPage(f.path)
+              : null;
+          items.add(_RecentItem(f, page));
+        }
+      } catch (_) {}
+    }
+    if (mounted) setState(() => _recent = items);
+  }
+
+  Future<void> _openRecent(RecentFile f) async {
+    // Pindahkan ke paling atas daftar "terakhir dibuka"
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(RecentFile.prefKey);
+    if (raw != null) {
+      final list = RecentFile.decodeList(raw)
+        ..removeWhere((e) => e.path == f.path);
+      list.insert(
+          0,
+          RecentFile(
+              path: f.path,
+              name: f.name,
+              extension: f.extension,
+              lastOpened: DateTime.now().millisecondsSinceEpoch));
+      await prefs.setString(RecentFile.prefKey, RecentFile.encodeList(list));
+    }
+    if (!mounted) return;
+    final ok = await openDocumentViewer(context, f.path, f.name, f.extension);
+    if (!ok && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content:
+              Text('Format .${f.extension.toUpperCase()} tidak didukung')));
+    }
+    _loadRecent();
+  }
+
+  Future<void> _push(Widget screen) async {
+    await Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
+    _loadRecent();
+  }
+
+  // ── Build ───────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final appBarBg = isDark ? const Color(0xFF1A1E30) : Colors.white;
-    final divColor = isDark ? const Color(0xFF2A3050) : const Color(0xFFE4E7F0);
-    final iconColor = isDark ? Colors.white70 : const Color(0xFF555770);
-    final titleColor = isDark ? Colors.white : const Color(0xFF1A1A2E);
-
+    final features = _features();
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: appBarBg,
-        title: Row(mainAxisSize: MainAxisSize.min, children: [
-          Container(
-            padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(
-              color: const Color(0xFF7B8BFF).withOpacity(0.12),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Icon(Icons.apps_rounded, color: Color(0xFF7B8BFF), size: 18),
+      body: SafeArea(
+        child: RefreshIndicator(
+          onRefresh: _loadRecent,
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+            children: [
+              _buildHeader(context),
+              const SizedBox(height: 24),
+              ValueListenableBuilder<String>(
+                valueListenable: AppSettings.viewMode,
+                builder: (ctx, view, _) => view == 'grid'
+                    ? _BentoGrid(features: features)
+                    : Column(
+                        children: features
+                            .expand((f) => [
+                                  _FeatureListCard(feature: f),
+                                  const SizedBox(height: 12),
+                                ])
+                            .toList(),
+                      ),
+              ),
+              const SizedBox(height: 32),
+              _buildRecentSection(context),
+            ],
           ),
-          const SizedBox(width: 8),
-          Text('SuperAppHD',
-              style: TextStyle(color: titleColor, fontWeight: FontWeight.bold)),
-        ]),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.settings_outlined, size: 22, color: iconColor),
-            onPressed: _openSettings,
-            tooltip: 'Pengaturan',
-          ),
-        ],
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(height: 1, color: divColor),
         ),
       ),
-      body: ValueListenableBuilder<String>(
-        valueListenable: AppSettings.viewMode,
-        builder: (ctx, view, _) => view == 'grid'
-            ? _buildGrid(ctx)
-            : _buildList(ctx),
-      ),
     );
   }
 
-  // ── List view ───────────────────────────────────────────────────────────────
-  Widget _buildList(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textPrimary = isDark ? Colors.white : const Color(0xFF1A1A2E);
-    final textSub = isDark ? const Color(0xFF6B7394) : const Color(0xFF9B9FAD);
+  Widget _buildHeader(BuildContext context) {
+    final theme = Theme.of(context);
+    final sub = theme.colorScheme.onSurfaceVariant;
+    final hour = DateTime.now().hour;
+    final greet = hour < 11
+        ? 'Selamat pagi'
+        : hour < 15
+            ? 'Selamat siang'
+            : hour < 19
+                ? 'Selamat sore'
+                : 'Selamat malam';
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(16, 20, 16, 40),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Pilih Fitur',
-              style: TextStyle(
-                  fontSize: 22, fontWeight: FontWeight.bold, color: textPrimary)),
-          const SizedBox(height: 4),
-          Text('Apa yang ingin kamu lakukan?',
-              style: TextStyle(fontSize: 13, color: textSub)),
-          const SizedBox(height: 20),
-          ..._features().expand((f) => [
-                _FeatureCard(feature: f),
-                const SizedBox(height: 14),
-              ]),
-        ],
-      ),
-    );
-  }
-
-  // ── Grid view ───────────────────────────────────────────────────────────────
-  Widget _buildGrid(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textPrimary = isDark ? Colors.white : const Color(0xFF1A1A2E);
-    final textSub = isDark ? const Color(0xFF6B7394) : const Color(0xFF9B9FAD);
-    final features = _features();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('Pilih Fitur',
-                style: TextStyle(
-                    fontSize: 22, fontWeight: FontWeight.bold, color: textPrimary)),
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Row(children: [
+        Expanded(
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('$greet 👋', style: TextStyle(fontSize: 14, color: sub)),
             const SizedBox(height: 4),
-            Text('Apa yang ingin kamu lakukan?',
-                style: TextStyle(fontSize: 13, color: textSub)),
+            Text('SuperApp HD', style: theme.textTheme.headlineSmall),
           ]),
         ),
-        Expanded(
-          child: GridView.builder(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 40),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              mainAxisSpacing: 14,
-              crossAxisSpacing: 14,
-              childAspectRatio: 0.82,
-            ),
-            itemCount: features.length,
-            itemBuilder: (_, i) => _GridCard(feature: features[i]),
-          ),
+        SoftCard(
+          padding: const EdgeInsets.all(12),
+          onTap: _openSettings,
+          child: Icon(Icons.tune_rounded,
+              size: 22, color: theme.colorScheme.onSurface),
         ),
-      ],
+      ]),
+    );
+  }
+
+  Widget _buildRecentSection(BuildContext context) {
+    final theme = Theme.of(context);
+    final sub = theme.colorScheme.onSurfaceVariant;
+
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Row(children: [
+        Text('Terakhir dibuka', style: theme.textTheme.titleMedium),
+        const Spacer(),
+        if (_recent.isNotEmpty)
+          TextButton(
+            onPressed: () => _push(const ReaderScreen()),
+            child: const Text('Lihat semua'),
+          ),
+      ]),
+      const SizedBox(height: 8),
+      if (_recent.isEmpty)
+        SoftCard(
+          padding: const EdgeInsets.all(20),
+          child: Row(children: [
+            Icon(Icons.history_rounded, color: sub),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text('Dokumen yang kamu buka akan muncul di sini',
+                  style: TextStyle(fontSize: 13, color: sub)),
+            ),
+          ]),
+        )
+      else
+        ..._recent.expand((r) => [
+              _RecentTile(item: r, onTap: () => _openRecent(r.file)),
+              const SizedBox(height: 8),
+            ]),
+    ]);
+  }
+}
+
+// ── Bento grid ────────────────────────────────────────────────────────────────
+// Kartu besar (Downloader) di kiri, dua kartu kecil bertumpuk di kanan.
+class _BentoGrid extends StatelessWidget {
+  final List<_Feature> features;
+  const _BentoGrid({required this.features});
+
+  @override
+  Widget build(BuildContext context) {
+    final main = features.first;
+    final rest = features.skip(1).toList();
+    return SizedBox(
+      height: 280,
+      child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Expanded(child: _HeroCard(feature: main)),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(children: [
+            for (var i = 0; i < rest.length; i++) ...[
+              if (i > 0) const SizedBox(height: 12),
+              Expanded(child: _SmallCard(feature: rest[i])),
+            ],
+          ]),
+        ),
+      ]),
+    );
+  }
+}
+
+class _HeroCard extends StatelessWidget {
+  final _Feature feature;
+  const _HeroCard({required this.feature});
+
+  @override
+  Widget build(BuildContext context) {
+    final a = feature.accentColor;
+    return SoftCard(
+      onTap: feature.onTap,
+      padding: const EdgeInsets.all(20),
+      shadowTint: a,
+      gradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [a, Color.lerp(a, Colors.black, 0.18)!],
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.2),
+            borderRadius: BorderRadius.circular(AppTheme.radiusButton),
+          ),
+          child: Icon(feature.icon, color: Colors.white, size: 28),
+        ),
+        const Spacer(),
+        Text(feature.title,
+            style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+                color: Colors.white,
+                height: 1.15)),
+        const SizedBox(height: 6),
+        Text(feature.tags.join(' · '),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style:
+                TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.85))),
+        const SizedBox(height: 16),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(AppTheme.radiusButton),
+          ),
+          child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+            Icon(Icons.content_paste_rounded, size: 16, color: a),
+            const SizedBox(width: 6),
+            Text('Tempel link',
+                style: TextStyle(
+                    fontSize: 13, fontWeight: FontWeight.w700, color: a)),
+          ]),
+        ),
+      ]),
+    );
+  }
+}
+
+class _SmallCard extends StatelessWidget {
+  final _Feature feature;
+  const _SmallCard({required this.feature});
+
+  @override
+  Widget build(BuildContext context) {
+    final a = feature.accentColor;
+    final sub = Theme.of(context).colorScheme.onSurfaceVariant;
+    return SoftCard(
+      onTap: feature.onTap,
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: a.withOpacity(0.14),
+              borderRadius: BorderRadius.circular(AppTheme.radiusChip),
+            ),
+            child: Icon(feature.icon, color: a, size: 22),
+          ),
+          const Spacer(),
+          Icon(Icons.arrow_outward_rounded, size: 18, color: sub),
+        ]),
+        const Spacer(),
+        Text(feature.title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+        const SizedBox(height: 2),
+        Text(feature.tags.take(3).join(' · '),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(fontSize: 11, color: sub)),
+      ]),
     );
   }
 }
 
 // ── Feature card (list view) ──────────────────────────────────────────────────
-class _FeatureCard extends StatelessWidget {
+class _FeatureListCard extends StatelessWidget {
   final _Feature feature;
-  const _FeatureCard({required this.feature});
+  const _FeatureListCard({required this.feature});
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardBg = isDark ? const Color(0xFF1E2640) : Colors.white;
-    final textPrimary = isDark ? Colors.white : const Color(0xFF1A1A2E);
-    final textSub = isDark ? const Color(0xFF8892B0) : const Color(0xFF9B9FAD);
     final a = feature.accentColor;
-
-    return GestureDetector(
+    final sub = Theme.of(context).colorScheme.onSurfaceVariant;
+    return SoftCard(
       onTap: feature.onTap,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: cardBg,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: a.withOpacity(0.2), width: 1.5),
-          boxShadow: isDark
-              ? [BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 8, offset: const Offset(0, 2))]
-              : [
-                  BoxShadow(color: a.withOpacity(0.08), blurRadius: 16, offset: const Offset(0, 4)),
-                  BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2)),
-                ],
+      padding: const EdgeInsets.all(20),
+      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: a.withOpacity(0.14),
+            borderRadius: BorderRadius.circular(AppTheme.radiusButton),
+          ),
+          child: Icon(feature.icon, color: a, size: 26),
         ),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: a.withOpacity(0.12), borderRadius: BorderRadius.circular(14)),
-              child: Icon(feature.icon, color: a, size: 26),
-            ),
-            const Spacer(),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: a.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: a.withOpacity(0.25)),
-              ),
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                Text('Buka',
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: a)),
-                const SizedBox(width: 4),
-                Icon(Icons.arrow_forward_rounded, size: 14, color: a),
-              ]),
+        const SizedBox(width: 16),
+        Expanded(
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(feature.title,
+                style:
+                    const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 4),
+            Text(feature.description,
+                style: TextStyle(fontSize: 13, color: sub, height: 1.4)),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: feature.tags
+                  .map((t) => Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: a.withOpacity(0.1),
+                          borderRadius:
+                              BorderRadius.circular(AppTheme.radiusChip),
+                        ),
+                        child: Text(t,
+                            style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: a)),
+                      ))
+                  .toList(),
             ),
           ]),
-          const SizedBox(height: 14),
-          Text(feature.title,
-              style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: textPrimary)),
-          const SizedBox(height: 5),
-          Text(feature.description,
-              style: TextStyle(fontSize: 13, color: textSub, height: 1.4)),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 6,
-            children: feature.tags.map((tag) => Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: a.withOpacity(0.08), borderRadius: BorderRadius.circular(6)),
-              child: Text(tag,
-                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: a)),
-            )).toList(),
-          ),
-        ]),
-      ),
+        ),
+      ]),
     );
   }
 }
 
-// ── Feature card (grid view) ──────────────────────────────────────────────────
-class _GridCard extends StatelessWidget {
-  final _Feature feature;
-  const _GridCard({required this.feature});
+// ── Recent document tile ──────────────────────────────────────────────────────
+class _RecentItem {
+  final RecentFile file;
+  final int? pdfPage; // 0-based, halaman terakhir dibaca
+  const _RecentItem(this.file, this.pdfPage);
+}
+
+class _RecentTile extends StatelessWidget {
+  final _RecentItem item;
+  final VoidCallback onTap;
+  const _RecentTile({required this.item, required this.onTap});
+
+  static (IconData, Color) _style(String ext) => switch (ext) {
+        'pdf' => (Icons.picture_as_pdf_rounded, const Color(0xFFE53935)),
+        'docx' || 'odt' => (Icons.article_rounded, const Color(0xFF1565C0)),
+        'xlsx' || 'ods' => (Icons.table_chart_rounded, const Color(0xFF217346)),
+        'pptx' || 'odp' => (Icons.slideshow_rounded, const Color(0xFFD24726)),
+        'csv' => (Icons.grid_on_rounded, const Color(0xFF00695C)),
+        _ => (Icons.text_snippet_rounded, const Color(0xFF546E7A)),
+      };
+
+  static String _ago(DateTime d) {
+    final diff = DateTime.now().difference(d);
+    if (diff.inMinutes < 1) return 'Baru saja';
+    if (diff.inHours < 1) return '${diff.inMinutes} menit lalu';
+    if (diff.inDays < 1) return '${diff.inHours} jam lalu';
+    if (diff.inDays < 7) return '${diff.inDays} hari lalu';
+    return '${d.day}/${d.month}/${d.year}';
+  }
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardBg = isDark ? const Color(0xFF1E2640) : Colors.white;
-    final textPrimary = isDark ? Colors.white : const Color(0xFF1A1A2E);
-    final a = feature.accentColor;
+    final (icon, color) = _style(item.file.extension);
+    final sub = Theme.of(context).colorScheme.onSurfaceVariant;
+    final page = item.pdfPage;
 
-    return GestureDetector(
-      onTap: feature.onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: cardBg,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: a.withOpacity(0.2), width: 1.5),
-          boxShadow: isDark
-              ? [BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 8)]
-              : [BoxShadow(color: a.withOpacity(0.1), blurRadius: 12, offset: const Offset(0, 4))],
+    return SoftCard(
+      onTap: onTap,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(children: [
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.12),
+            borderRadius: BorderRadius.circular(AppTheme.radiusChip),
+          ),
+          child: Icon(icon, color: color, size: 22),
         ),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          // Icon
+        const SizedBox(width: 12),
+        Expanded(
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(item.file.name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style:
+                    const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+            const SizedBox(height: 2),
+            Text(_ago(item.file.date),
+                style: TextStyle(fontSize: 12, color: sub)),
+          ]),
+        ),
+        if (page != null && page > 0)
           Container(
-            padding: const EdgeInsets.all(10),
+            margin: const EdgeInsets.only(left: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
-              color: a.withOpacity(0.12), borderRadius: BorderRadius.circular(12)),
-            child: Icon(feature.icon, color: a, size: 24),
-          ),
-          const Spacer(),
-          // Title
-          Text(
-            feature.title,
-            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: textPrimary),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 6),
-          // Tags (max 2)
-          Wrap(
-            spacing: 4, runSpacing: 4,
-            children: feature.tags.take(2).map((t) => Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-              decoration: BoxDecoration(
-                color: a.withOpacity(0.09), borderRadius: BorderRadius.circular(4)),
-              child: Text(t,
-                  style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: a)),
-            )).toList(),
-          ),
-          const SizedBox(height: 10),
-          // Open button
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            decoration: BoxDecoration(
-              color: a.withOpacity(0.12), borderRadius: BorderRadius.circular(8)),
-            child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-              Text('Buka',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: a)),
+              color: AppTheme.readerColor.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(AppTheme.radiusChip),
+            ),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              const Icon(Icons.bookmark_rounded,
+                  size: 13, color: AppTheme.readerColor),
               const SizedBox(width: 4),
-              Icon(Icons.arrow_forward_rounded, size: 12, color: a),
+              Text('Hal ${page + 1}',
+                  style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.readerColor)),
             ]),
-          ),
-        ]),
-      ),
+          )
+        else
+          Icon(Icons.chevron_right_rounded, color: sub),
+      ]),
     );
   }
 }
@@ -461,7 +660,8 @@ class _SettingsSheetState extends State<_SettingsSheet> {
           // Handle
           Container(
             margin: const EdgeInsets.only(top: 12, bottom: 4),
-            width: 40, height: 4,
+            width: 40,
+            height: 4,
             decoration: BoxDecoration(
                 color: border, borderRadius: BorderRadius.circular(2)),
           ),
@@ -469,11 +669,14 @@ class _SettingsSheetState extends State<_SettingsSheet> {
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
             child: Row(children: [
-              const Icon(Icons.tune_rounded, color: Color(0xFF7B8BFF), size: 22),
+              const Icon(Icons.tune_rounded,
+                  color: Color(0xFF7B8BFF), size: 22),
               const SizedBox(width: 10),
               Text('Pengaturan',
                   style: TextStyle(
-                      fontSize: 18, fontWeight: FontWeight.bold, color: textPrimary)),
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: textPrimary)),
             ]),
           ),
           Divider(color: border, height: 1),
@@ -488,20 +691,25 @@ class _SettingsSheetState extends State<_SettingsSheet> {
             builder: (ctx, mode, _) {
               final dark = mode == ThemeMode.dark;
               return ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 2),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 2),
                 leading: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 300),
                   child: Icon(
                     dark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
                     key: ValueKey(dark),
-                    color: dark ? const Color(0xFF7B8BFF) : const Color(0xFFFFB74D),
+                    color: dark
+                        ? const Color(0xFF7B8BFF)
+                        : const Color(0xFFFFB74D),
                     size: 24,
                   ),
                 ),
                 title: Text(
                   dark ? 'Mode Gelap' : 'Mode Terang',
                   style: TextStyle(
-                      fontSize: 14, fontWeight: FontWeight.w600, color: textPrimary),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: textPrimary),
                 ),
                 subtitle: Text(
                   dark ? 'Cocok untuk malam hari' : 'Cocok untuk siang hari',
@@ -519,10 +727,13 @@ class _SettingsSheetState extends State<_SettingsSheet> {
           // View mode
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text('Tampilan Beranda',
                   style: TextStyle(
-                      fontSize: 14, fontWeight: FontWeight.w600, color: textPrimary)),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: textPrimary)),
               const SizedBox(height: 2),
               Text('Pilih cara menampilkan fitur',
                   style: TextStyle(fontSize: 12, color: textSub)),
@@ -537,8 +748,10 @@ class _SettingsSheetState extends State<_SettingsSheet> {
                   ),
                   padding: const EdgeInsets.all(4),
                   child: Row(children: [
-                    _viewBtn('list', Icons.view_agenda_rounded, 'List', view == 'list'),
-                    _viewBtn('grid', Icons.grid_view_rounded, 'Grid', view == 'grid'),
+                    _viewBtn('grid', Icons.dashboard_rounded, 'Bento',
+                        view == 'grid'),
+                    _viewBtn('list', Icons.view_agenda_rounded, 'List',
+                        view == 'list'),
                   ]),
                 ),
               ),
@@ -551,13 +764,16 @@ class _SettingsSheetState extends State<_SettingsSheet> {
           _sectionLabel('KONEKSI', label),
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(children: [
                 Icon(Icons.cloud_outlined, size: 16, color: textSub),
                 const SizedBox(width: 6),
                 Text('URL Backend Server',
                     style: TextStyle(
-                        fontSize: 14, fontWeight: FontWeight.w600, color: textPrimary)),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: textPrimary)),
               ]),
               const SizedBox(height: 2),
               Text('Untuk fitur Video Downloader',
@@ -594,7 +810,8 @@ class _SettingsSheetState extends State<_SettingsSheet> {
                           borderRadius: BorderRadius.circular(10)),
                     ));
                   },
-                  style: ElevatedButton.styleFrom(minimumSize: const Size(0, 48)),
+                  style:
+                      ElevatedButton.styleFrom(minimumSize: const Size(0, 48)),
                 ),
               ),
             ]),
@@ -622,7 +839,8 @@ class _SettingsSheetState extends State<_SettingsSheet> {
   Widget _viewBtn(String mode, IconData icon, String label, bool selected) {
     const accent = Color(0xFF7B8BFF);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final unselColor = isDark ? const Color(0xFF6B7394) : const Color(0xFF9B9FAD);
+    final unselColor =
+        isDark ? const Color(0xFF6B7394) : const Color(0xFF9B9FAD);
     return Expanded(
       child: GestureDetector(
         onTap: () => AppSettings.setViewMode(mode),
@@ -632,7 +850,8 @@ class _SettingsSheetState extends State<_SettingsSheet> {
           decoration: BoxDecoration(
             color: selected ? accent.withOpacity(0.15) : Colors.transparent,
             borderRadius: BorderRadius.circular(9),
-            border: selected ? Border.all(color: accent.withOpacity(0.5)) : null,
+            border:
+                selected ? Border.all(color: accent.withOpacity(0.5)) : null,
           ),
           child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
             Icon(icon, size: 16, color: selected ? accent : unselColor),

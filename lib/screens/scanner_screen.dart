@@ -1,10 +1,10 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:cunning_document_scanner/cunning_document_scanner.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
+import '../utils/app_theme.dart';
 
 class ScannerScreen extends StatefulWidget {
   const ScannerScreen({super.key});
@@ -17,6 +17,9 @@ class _ScannerScreenState extends State<ScannerScreen> {
   List<String> _pages = [];
   bool _saving = false;
   int _viewPage = 0;
+  final _pageCtrl = PageController();
+
+  static const _accent = AppTheme.scannerColor;
 
   static const _docTypes = [
     ('KTP', Icons.credit_card_rounded, Color(0xFF1565C0)),
@@ -32,7 +35,11 @@ class _ScannerScreenState extends State<ScannerScreen> {
         isGalleryImportAllowed: true,
       );
       if (pictures != null && pictures.isNotEmpty) {
-        setState(() { _pages = pictures; _viewPage = 0; });
+        setState(() {
+          _pages = pictures;
+          _viewPage = 0;
+        });
+        if (_pageCtrl.hasClients) _pageCtrl.jumpToPage(0);
       }
     } catch (e) {
       _snack('Kamera tidak tersedia: $e');
@@ -60,11 +67,12 @@ class _ScannerScreenState extends State<ScannerScreen> {
       final file = File('${dir.path}/$name');
       await file.writeAsBytes(await pdf.save());
 
-      _snack('Tersimpan: $name', action: SnackBarAction(
-        label: 'BUKA',
-        textColor: const Color(0xFF7B8BFF),
-        onPressed: () => OpenFilex.open(file.path),
-      ));
+      _snack('Tersimpan: $name',
+          action: SnackBarAction(
+            label: 'BUKA',
+            textColor: _accent,
+            onPressed: () => OpenFilex.open(file.path),
+          ));
     } catch (e) {
       _snack('Gagal simpan: $e');
     } finally {
@@ -100,158 +108,131 @@ class _ScannerScreenState extends State<ScannerScreen> {
   }
 
   @override
+  void dispose() {
+    _pageCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F6FA),
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        title: const Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.document_scanner_rounded, color: Color(0xFFFF6B9D), size: 20),
-            SizedBox(width: 8),
-            Text('Scanner Dokumen'),
-          ],
-        ),
+        title: const Text('Scanner Dokumen'),
         actions: [
           if (_pages.isNotEmpty)
             TextButton.icon(
               onPressed: _startScan,
               icon: const Icon(Icons.refresh_rounded, size: 16),
               label: const Text('Scan Ulang'),
-              style: TextButton.styleFrom(foregroundColor: const Color(0xFFFF6B9D)),
+              style: TextButton.styleFrom(foregroundColor: _accent),
             ),
         ],
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(height: 1, color: const Color(0xFFE4E7F0)),
-        ),
       ),
       body: _pages.isEmpty ? _buildEmpty() : _buildResult(),
     );
   }
 
   Widget _buildEmpty() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Scan button hero
-          GestureDetector(
-            onTap: _startScan,
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 36),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                    color: const Color(0xFFFF6B9D).withOpacity(0.3), width: 1.5),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFFFF6B9D).withOpacity(0.08),
-                    blurRadius: 16,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFF6B9D).withOpacity(0.1),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.document_scanner_rounded,
-                        color: Color(0xFFFF6B9D), size: 48),
-                  ),
-                  const SizedBox(height: 16),
-                  const Text('Mulai Scan',
-                      style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFFFF6B9D))),
-                  const SizedBox(height: 6),
-                  const Text('Tap untuk membuka kamera',
-                      style: TextStyle(fontSize: 13, color: Color(0xFF9B9FAD))),
-                ],
-              ),
-            ),
+    final sub = Theme.of(context).colorScheme.onSurfaceVariant;
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
+      children: [
+        // Scan button hero
+        SoftCard(
+          onTap: _startScan,
+          padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 20),
+          shadowTint: _accent,
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [_accent, Color.lerp(_accent, Colors.black, 0.18)!],
           ),
-          const SizedBox(height: 24),
-          const Text('JENIS DOKUMEN YANG BISA DISCAN',
-              style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF9B9FAD),
-                  letterSpacing: 1)),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: _docTypes.map((d) {
-              final (label, icon, color) = d;
-              return Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: color.withOpacity(0.25)),
+                  color: Colors.white.withOpacity(0.2),
+                  shape: BoxShape.circle,
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(icon, size: 14, color: color),
-                    const SizedBox(width: 6),
-                    Text(label,
-                        style: TextStyle(
-                            fontSize: 12,
-                            color: color,
-                            fontWeight: FontWeight.w500)),
-                  ],
-                ),
-              );
-            }).toList(),
+                child: const Icon(Icons.document_scanner_rounded,
+                    color: Colors.white, size: 44),
+              ),
+              const SizedBox(height: 16),
+              const Text('Mulai Scan',
+                  style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white)),
+              const SizedBox(height: 4),
+              Text('Tap untuk membuka kamera',
+                  style: TextStyle(
+                      fontSize: 13, color: Colors.white.withOpacity(0.85))),
+            ],
           ),
-          const SizedBox(height: 24),
-          _buildTip(Icons.wb_sunny_rounded, 'Gunakan pencahayaan yang cukup',
-              'Pastikan dokumen terang dan tidak ada bayangan'),
-          const SizedBox(height: 10),
-          _buildTip(Icons.crop_free_rounded, 'Posisikan dengan benar',
-              'Letakkan dokumen di permukaan datar dan rata'),
-          const SizedBox(height: 10),
-          _buildTip(Icons.hd_rounded, 'Pegang kamera stabil',
-              'Hindari guncangan untuk hasil scan yang tajam'),
-        ],
-      ),
+        ),
+        const SizedBox(height: 24),
+        Text('JENIS DOKUMEN YANG BISA DISCAN',
+            style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: sub,
+                letterSpacing: 1)),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: _docTypes.map((d) {
+            final (label, icon, color) = d;
+            return Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(AppTheme.radiusChip),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(icon, size: 14, color: color),
+                  const SizedBox(width: 6),
+                  Text(label,
+                      style: TextStyle(
+                          fontSize: 12,
+                          color: color,
+                          fontWeight: FontWeight.w600)),
+                ],
+              ),
+            );
+          }).toList(),
+        ),
+        const SizedBox(height: 32),
+        Text('Tips', style: Theme.of(context).textTheme.titleMedium),
+        const SizedBox(height: 8),
+        _buildTip(Icons.wb_sunny_rounded, 'Gunakan pencahayaan yang cukup',
+            'Pastikan dokumen terang dan tidak ada bayangan'),
+        const SizedBox(height: 8),
+        _buildTip(Icons.crop_free_rounded, 'Posisikan dengan benar',
+            'Letakkan dokumen di permukaan datar dan rata'),
+        const SizedBox(height: 8),
+        _buildTip(Icons.hd_rounded, 'Pegang kamera stabil',
+            'Hindari guncangan untuk hasil scan yang tajam'),
+      ],
     );
   }
 
   Widget _buildTip(IconData icon, String title, String desc) {
-    return Container(
+    final sub = Theme.of(context).colorScheme.onSurfaceVariant;
+    return SoftCard(
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: const Color(0xFFFF6B9D).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
+              color: _accent.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(AppTheme.radiusChip),
             ),
-            child: Icon(icon, color: const Color(0xFFFF6B9D), size: 20),
+            child: Icon(icon, color: _accent, size: 20),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -260,13 +241,9 @@ class _ScannerScreenState extends State<ScannerScreen> {
               children: [
                 Text(title,
                     style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF1A1A2E))),
+                        fontSize: 14, fontWeight: FontWeight.w600)),
                 const SizedBox(height: 2),
-                Text(desc,
-                    style: const TextStyle(
-                        fontSize: 11, color: Color(0xFF9B9FAD))),
+                Text(desc, style: TextStyle(fontSize: 12, color: sub)),
               ],
             ),
           ),
@@ -276,24 +253,27 @@ class _ScannerScreenState extends State<ScannerScreen> {
   }
 
   Widget _buildResult() {
+    final scheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Column(
       children: [
         // Preview halaman aktif
         Expanded(
           child: Container(
-            color: const Color(0xFFE8E8E8),
+            color: isDark ? const Color(0xFF0B0D14) : const Color(0xFFE6E8EF),
             child: PageView.builder(
+              controller: _pageCtrl,
               itemCount: _pages.length,
               onPageChanged: (i) => setState(() => _viewPage = i),
               itemBuilder: (_, i) => InteractiveViewer(
                 child: Center(
                   child: Container(
-                    margin: const EdgeInsets.all(12),
+                    margin: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withOpacity(0.2),
-                          blurRadius: 12,
+                          blurRadius: 16,
                           offset: const Offset(0, 4),
                         ),
                       ],
@@ -305,95 +285,104 @@ class _ScannerScreenState extends State<ScannerScreen> {
             ),
           ),
         ),
-        // Thumbnail strip
-        if (_pages.length > 1)
-          Container(
-            height: 80,
-            color: Colors.white,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.all(8),
-              itemCount: _pages.length,
-              itemBuilder: (_, i) => GestureDetector(
-                onTap: () => setState(() => _viewPage = i),
-                child: Container(
-                  margin: const EdgeInsets.only(right: 8),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(
-                      color: i == _viewPage
-                          ? const Color(0xFFFF6B9D)
-                          : const Color(0xFFE4E7F0),
-                      width: 2,
-                    ),
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
-                    child: Image.file(File(_pages[i]),
-                        width: 52, height: 64, fit: BoxFit.cover),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        // Action bar
+        // Panel bawah: thumbnail + aksi
         Container(
-          color: Colors.white,
+          decoration: BoxDecoration(
+            color: scheme.surface,
+            borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(AppTheme.radiusCard)),
+            boxShadow: AppTheme.softShadow(context),
+          ),
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
           child: SafeArea(
             top: false,
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Row(
-                children: [
-                  Text('${_pages.length} halaman',
-                      style: const TextStyle(
-                          color: Color(0xFF9B9FAD), fontSize: 12)),
-                  const Spacer(),
-                  _saving
-                      ? const SizedBox(
-                          width: 24, height: 24,
-                          child: CircularProgressIndicator(
-                              strokeWidth: 2.5,
-                              color: Color(0xFF7B8BFF)))
-                      : Row(
-                          children: [
-                            _actionBtn(Icons.image_rounded, 'Simpan JPG',
-                                _saveAsImages, const Color(0xFF7B8BFF)),
-                            const SizedBox(width: 10),
-                            _actionBtn(Icons.picture_as_pdf_rounded, 'Simpan PDF',
-                                _saveAsPdf, const Color(0xFFFF6B9D)),
-                          ],
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              if (_pages.length > 1)
+                SizedBox(
+                  height: 72,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: _pages.length,
+                    itemBuilder: (_, i) => GestureDetector(
+                      onTap: () => _pageCtrl.animateToPage(i,
+                          duration: const Duration(milliseconds: 250),
+                          curve: Curves.easeOut),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 150),
+                        margin: const EdgeInsets.only(right: 8),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: i == _viewPage
+                                ? _accent
+                                : scheme.outlineVariant,
+                            width: 2,
+                          ),
                         ),
-                ],
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.file(File(_pages[i]),
+                              width: 52, height: 68, fit: BoxFit.cover),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                child: Row(
+                  children: [
+                    Text('${_viewPage + 1} / ${_pages.length} halaman',
+                        style: TextStyle(
+                            color: scheme.onSurfaceVariant, fontSize: 12)),
+                    const Spacer(),
+                    _saving
+                        ? const SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2.5, color: _accent))
+                        : Row(
+                            children: [
+                              _actionBtn(
+                                  Icons.image_rounded, 'JPG', _saveAsImages,
+                                  filled: false),
+                              const SizedBox(width: 8),
+                              _actionBtn(Icons.picture_as_pdf_rounded,
+                                  'Simpan PDF', _saveAsPdf,
+                                  filled: true),
+                            ],
+                          ),
+                  ],
+                ),
               ),
-            ),
+            ]),
           ),
         ),
       ],
     );
   }
 
-  Widget _actionBtn(IconData icon, String label, VoidCallback onTap, Color color) {
+  Widget _actionBtn(IconData icon, String label, VoidCallback onTap,
+      {required bool filled}) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: color.withOpacity(0.3)),
+          color: filled ? _accent : _accent.withOpacity(0.12),
+          borderRadius: BorderRadius.circular(AppTheme.radiusButton),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 16, color: color),
+            Icon(icon, size: 16, color: filled ? Colors.white : _accent),
             const SizedBox(width: 6),
             Text(label,
                 style: TextStyle(
-                    fontSize: 12,
-                    color: color,
-                    fontWeight: FontWeight.w600)),
+                    fontSize: 13,
+                    color: filled ? Colors.white : _accent,
+                    fontWeight: FontWeight.w700)),
           ],
         ),
       ),

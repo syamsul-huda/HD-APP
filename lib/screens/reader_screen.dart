@@ -5,6 +5,7 @@ import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/recent_file.dart';
+import '../utils/app_theme.dart';
 import '../utils/fullscreen_reader.dart';
 import 'pdf_viewer_screen.dart';
 import 'docx_viewer_screen.dart';
@@ -19,10 +20,11 @@ class ReaderScreen extends StatefulWidget {
 }
 
 class _ReaderScreenState extends State<ReaderScreen> {
-  static const _prefKey = 'recent_files_reader';
+  static const _prefKey = RecentFile.prefKey;
   static const _maxRecent = 20;
 
   List<RecentFile> _recent = [];
+  Map<String, int> _pdfPages = {};
   bool _loading = false;
 
   static const _formats = [
@@ -51,6 +53,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
         if (await File(f.path).exists()) valid.add(f);
       }
       setState(() => _recent = valid);
+      _loadPdfPages();
     } catch (_) {}
   }
 
@@ -138,52 +141,9 @@ class _ReaderScreenState extends State<ReaderScreen> {
 
   Future<void> _navigateToViewer(String path, String name, String ext) async {
     if (!mounted) return;
-
-    if (ext == 'pdf') {
-      await Navigator.push(
-          context,
-          MaterialPageRoute(
-              builder: (_) => PdfViewerScreen(path: path, title: name)));
-      return;
-    }
-
-    if (ext == 'txt' || ext == 'csv') {
-      final content = await File(path).readAsString();
-      if (!mounted) return;
-      await Navigator.push(
-          context,
-          MaterialPageRoute(
-              builder: (_) =>
-                  _TextViewerScreen(title: name, content: content)));
-      return;
-    }
-
-    if (ext == 'docx' || ext == 'odt') {
-      await Navigator.push(
-          context,
-          MaterialPageRoute(
-              builder: (_) => DocxViewerScreen(path: path, title: name)));
-      return;
-    }
-
-    if (ext == 'xlsx' || ext == 'ods') {
-      await Navigator.push(
-          context,
-          MaterialPageRoute(
-              builder: (_) => XlsxViewerScreen(path: path, title: name)));
-      return;
-    }
-
-    if (ext == 'pptx' || ext == 'odp') {
-      await Navigator.push(
-          context,
-          MaterialPageRoute(
-              builder: (_) => PptxViewerScreen(path: path, title: name)));
-      return;
-    }
-
-    final result = await OpenFilex.open(path);
-    if (result.type != ResultType.done && mounted) {
+    final opened = await openDocumentViewer(context, path, name, ext);
+    _loadPdfPages();
+    if (!opened && mounted) {
       _snack(
           'Format .${ext.toUpperCase()} tidak didukung secara langsung. Install WPS Office untuk membukanya.');
     }
@@ -206,64 +166,82 @@ class _ReaderScreenState extends State<ReaderScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F6FA),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        title: const Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.menu_book_rounded, color: Color(0xFF4ECDC4), size: 20),
-            SizedBox(width: 8),
-            Text('Pembaca Dokumen'),
+      appBar: AppBar(title: const Text('Pembaca Dokumen')),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
+        children: [
+          _buildPickCard(theme),
+          const SizedBox(height: 16),
+          _buildFormatsSection(theme),
+          if (_recent.isNotEmpty) ...[
+            const SizedBox(height: 32),
+            _buildRecentSection(theme),
           ],
-        ),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(height: 1, color: const Color(0xFFE4E7F0)),
-        ),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildFormatsSection(),
-            const SizedBox(height: 16),
-            _buildPickButton(),
-            if (_recent.isNotEmpty) ...[
-              const SizedBox(height: 24),
-              _buildRecentSection(),
-            ],
-          ],
-        ),
+        ],
       ),
     );
   }
 
-  Widget _buildFormatsSection() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+  Widget _buildPickCard(ThemeData theme) {
+    const a = AppTheme.readerColor;
+    return SoftCard(
+      onTap: _loading ? null : _pickFile,
+      padding: const EdgeInsets.all(20),
+      shadowTint: a,
+      gradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [a, Color.lerp(a, Colors.black, 0.18)!],
       ),
+      child: Row(children: [
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.2),
+            borderRadius: BorderRadius.circular(AppTheme.radiusButton),
+          ),
+          child: _loading
+              ? const SizedBox(
+                  width: 26,
+                  height: 26,
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2.5, color: Colors.white))
+              : const Icon(Icons.folder_open_rounded,
+                  color: Colors.white, size: 26),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(_loading ? 'Membuka...' : 'Pilih File Dokumen',
+                style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white)),
+            const SizedBox(height: 4),
+            Text('Dibaca langsung di aplikasi',
+                style: TextStyle(
+                    fontSize: 13, color: Colors.white.withOpacity(0.85))),
+          ]),
+        ),
+        const Icon(Icons.arrow_forward_rounded, color: Colors.white),
+      ]),
+    );
+  }
+
+  Widget _buildFormatsSection(ThemeData theme) {
+    return SoftCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'FORMAT YANG DIDUKUNG',
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w700,
-              color: Color(0xFF9B9FAD),
+              color: theme.colorScheme.onSurfaceVariant,
               letterSpacing: 1,
             ),
           ),
@@ -277,23 +255,19 @@ class _ReaderScreenState extends State<ReaderScreen> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: color.withOpacity(0.2)),
+                  color: color.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(AppTheme.radiusChip),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(icon, size: 14, color: color),
                     const SizedBox(width: 5),
-                    Text(
-                      label,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: color,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                    Text(label,
+                        style: TextStyle(
+                            fontSize: 12,
+                            color: color,
+                            fontWeight: FontWeight.w600)),
                   ],
                 ),
               );
@@ -304,101 +278,63 @@ class _ReaderScreenState extends State<ReaderScreen> {
     );
   }
 
-  Widget _buildPickButton() {
-    return ElevatedButton.icon(
-      onPressed: _loading ? null : _pickFile,
-      icon: _loading
-          ? const SizedBox(
-              width: 18,
-              height: 18,
-              child: CircularProgressIndicator(
-                  strokeWidth: 2, color: Colors.white),
-            )
-          : const Icon(Icons.folder_open_rounded),
-      label: Text(_loading ? 'Membuka...' : 'Pilih File Dokumen'),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: const Color(0xFF4ECDC4),
-        minimumSize: const Size(double.infinity, 52),
-      ),
-    );
-  }
-
-  Widget _buildRecentSection() {
+  Widget _buildRecentSection(ThemeData theme) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            const Icon(Icons.history_rounded,
-                size: 18, color: Color(0xFF9B9FAD)),
-            const SizedBox(width: 6),
-            const Text(
-              'Baru Dibuka',
-              style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF1A1A2E)),
-            ),
+            Text('Baru Dibuka', style: theme.textTheme.titleMedium),
             const Spacer(),
             TextButton(
               onPressed: () async {
                 setState(() => _recent.clear());
                 await _saveRecent();
               },
-              child: const Text(
-                'Hapus Semua',
-                style: TextStyle(fontSize: 12, color: Color(0xFF9B9FAD)),
-              ),
+              child: Text('Hapus Semua',
+                  style: TextStyle(
+                      fontSize: 12, color: theme.colorScheme.onSurfaceVariant)),
             ),
           ],
         ),
         const SizedBox(height: 8),
-        ..._recent.map(_buildRecentCard),
+        ..._recent.map((f) => _buildRecentCard(f, theme)),
       ],
     );
   }
 
-  Widget _buildRecentCard(RecentFile file) {
+  Widget _buildRecentCard(RecentFile file, ThemeData theme) {
     final color = _extColor(file.extension);
     final icon = _extIcon(file.extension);
-    final now = DateTime.now();
-    final diff = now.difference(file.date);
+    final sub = theme.colorScheme.onSurfaceVariant;
+    final diff = DateTime.now().difference(file.date);
     final timeStr = diff.inDays > 0
         ? '${diff.inDays} hari lalu'
         : diff.inHours > 0
             ? '${diff.inHours} jam lalu'
-            : '${diff.inMinutes} menit lalu';
+            : diff.inMinutes > 0
+                ? '${diff.inMinutes} menit lalu'
+                : 'Baru saja';
+    final page = _pdfPages[file.path];
 
-    return Dismissible(
-      key: Key(file.path),
-      direction: DismissDirection.endToStart,
-      background: Container(
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 16),
-        margin: const EdgeInsets.only(bottom: 8),
-        decoration: BoxDecoration(
-          color: Colors.red.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: const Icon(Icons.delete_rounded, color: Colors.redAccent),
-      ),
-      onDismissed: (_) => _removeRecent(file.path),
-      child: GestureDetector(
-        onTap: () => _openRecent(file),
-        child: Container(
-          margin: const EdgeInsets.only(bottom: 8),
-          padding: const EdgeInsets.all(12),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Dismissible(
+        key: Key(file.path),
+        direction: DismissDirection.endToStart,
+        background: Container(
+          alignment: Alignment.centerRight,
+          padding: const EdgeInsets.only(right: 20),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(14),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.04),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
-              ),
-            ],
+            color: Colors.red.withOpacity(0.12),
+            borderRadius: BorderRadius.circular(AppTheme.radiusCard),
           ),
+          child: const Icon(Icons.delete_rounded, color: Colors.redAccent),
+        ),
+        onDismissed: (_) => _removeRecent(file.path),
+        child: SoftCard(
+          onTap: () => _openRecent(file),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
             children: [
               Container(
@@ -406,7 +342,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
                 height: 44,
                 decoration: BoxDecoration(
                   color: color.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(AppTheme.radiusChip),
                 ),
                 child: Icon(icon, color: color, size: 22),
               ),
@@ -415,53 +351,54 @@ class _ReaderScreenState extends State<ReaderScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      file.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xFF1A1A2E),
-                      ),
-                    ),
+                    Text(file.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            fontSize: 14, fontWeight: FontWeight.w600)),
                     const SizedBox(height: 3),
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: color.withOpacity(0.12),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            file.extension.toUpperCase(),
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                              color: color,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          timeStr,
-                          style: const TextStyle(
-                              fontSize: 11, color: Color(0xFF9B9FAD)),
-                        ),
-                      ],
-                    ),
+                    Text('${file.extension.toUpperCase()} · $timeStr',
+                        style: TextStyle(fontSize: 12, color: sub)),
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right_rounded,
-                  color: Color(0xFFBDBDBD), size: 18),
+              if (page != null && page > 0)
+                Container(
+                  margin: const EdgeInsets.only(left: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: AppTheme.readerColor.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(AppTheme.radiusChip),
+                  ),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    const Icon(Icons.bookmark_rounded,
+                        size: 13, color: AppTheme.readerColor),
+                    const SizedBox(width: 4),
+                    Text('Hal ${page + 1}',
+                        style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: AppTheme.readerColor)),
+                  ]),
+                )
+              else
+                Icon(Icons.chevron_right_rounded, color: sub),
             ],
           ),
         ),
       ),
     );
+  }
+
+  // Halaman terakhir dibaca untuk tiap PDF di daftar "Baru Dibuka"
+  Future<void> _loadPdfPages() async {
+    final pages = <String, int>{};
+    for (final f in _recent.where((f) => f.extension == 'pdf')) {
+      final p = await PdfViewerScreen.lastReadPage(f.path);
+      if (p != null) pages[f.path] = p;
+    }
+    if (mounted) setState(() => _pdfPages = pages);
   }
 
   Color _extColor(String ext) {
@@ -513,6 +450,34 @@ class _ReaderScreenState extends State<ReaderScreen> {
         return Icons.insert_drive_file_rounded;
     }
   }
+}
+
+/// Buka dokumen dengan viewer in-app yang sesuai (atau aplikasi eksternal).
+/// Mengembalikan false jika format tidak bisa dibuka.
+Future<bool> openDocumentViewer(
+    BuildContext context, String path, String name, String ext) async {
+  ext = ext.toLowerCase();
+  Widget? screen;
+  if (ext == 'pdf') {
+    screen = PdfViewerScreen(path: path, title: name);
+  } else if (ext == 'txt' || ext == 'csv') {
+    final content = await File(path).readAsString();
+    screen = _TextViewerScreen(title: name, content: content);
+  } else if (ext == 'docx' || ext == 'odt') {
+    screen = DocxViewerScreen(path: path, title: name);
+  } else if (ext == 'xlsx' || ext == 'ods') {
+    screen = XlsxViewerScreen(path: path, title: name);
+  } else if (ext == 'pptx' || ext == 'odp') {
+    screen = PptxViewerScreen(path: path, title: name);
+  }
+
+  if (screen == null) {
+    final result = await OpenFilex.open(path);
+    return result.type == ResultType.done;
+  }
+  if (!context.mounted) return false;
+  await Navigator.push(context, MaterialPageRoute(builder: (_) => screen!));
+  return true;
 }
 
 // ── In-app text viewer ────────────────────────────────────────────────────────

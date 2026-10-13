@@ -7,6 +7,7 @@ import 'package:share_plus/share_plus.dart';
 import '../models/video_info.dart';
 import '../models/download_task.dart';
 import '../services/api_service.dart';
+import '../utils/app_theme.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -87,9 +88,8 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() {
         _info = info;
         _selectedFormat = info.formats.first;
-        _selectedAudioFormat = info.audioFormats.isNotEmpty
-            ? info.audioFormats.first
-            : null;
+        _selectedAudioFormat =
+            info.audioFormats.isNotEmpty ? info.audioFormats.first : null;
         _fetching = false;
       });
     } catch (e) {
@@ -204,15 +204,14 @@ class _HomeScreenState extends State<HomeScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: Colors.white,
         title: const Text('Pengaturan Backend'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'URL Backend Server',
-              style: TextStyle(fontSize: 12, color: Colors.white60),
+              style: TextStyle(fontSize: 12, color: _sub),
             ),
             const SizedBox(height: 8),
             TextField(
@@ -223,11 +222,11 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             const SizedBox(height: 12),
-            const Text(
+            Text(
               '• Android Emulator: http://10.0.2.2:8000\n'
               '• HP Fisik: http://<IP-Komputer>:8000\n'
               '• iOS Simulator: http://localhost:8000',
-              style: TextStyle(fontSize: 11, color: const Color(0xFF9B9FAD), height: 1.6),
+              style: TextStyle(fontSize: 11, color: _sub, height: 1.6),
             ),
           ],
         ),
@@ -268,97 +267,92 @@ class _HomeScreenState extends State<HomeScreen> {
     return '$n tayangan';
   }
 
+  // ── Warna tema ──────────────────────────────────────────────────────────────
+  static const _accent = AppTheme.downloaderColor; // video
+  static const _audioColor = AppTheme.seed; // audio
+
+  Color get _sub => Theme.of(context).colorScheme.onSurfaceVariant;
+  Color get _border => Theme.of(context).colorScheme.outlineVariant;
+  Color get _fill => Theme.of(context).brightness == Brightness.dark
+      ? const Color(0xFF222838)
+      : const Color(0xFFF4F5FA);
+
+  Widget _label(String text) => Padding(
+        padding: const EdgeInsets.only(bottom: 10),
+        child: Text(text,
+            style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: _sub,
+                letterSpacing: 1)),
+      );
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: const Color(0xFF7B8BFF).withOpacity(0.2),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Icon(
-                Icons.download_rounded,
-                color: Color(0xFF7B8BFF),
-                size: 18,
-              ),
-            ),
-            const SizedBox(width: 8),
-            const Text('VideoSaver'),
-          ],
-        ),
+        title: const Text('Video Downloader'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.settings_rounded, size: 22),
+            icon: const Icon(Icons.tune_rounded, size: 22),
             onPressed: _showSettings,
             tooltip: 'Pengaturan',
           ),
         ],
       ),
-      body: SingleChildScrollView(
+      body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildPlatformSection(),
-            const SizedBox(height: 20),
-            _buildUrlSection(),
-            if (_fetchError != null) ...[
-              const SizedBox(height: 12),
-              _buildErrorCard(_fetchError!),
-            ],
-            if (_info != null) ...[
-              const SizedBox(height: 20),
-              _buildVideoInfoCard(_info!),
-              const SizedBox(height: 16),
-              _buildDownloadTypeToggle(),
-              const SizedBox(height: 14),
-              if (_downloadType == 'video')
-                _buildFormatPicker(_info!)
-              else
-                _buildAudioFormatPicker(_info!),
-              const SizedBox(height: 14),
-              _buildDownloadButton(),
-            ],
-            if (_downloads.isNotEmpty) ...[
-              const SizedBox(height: 28),
-              Row(
+        children: [
+          _buildUrlSection(),
+          if (_fetchError != null) ...[
+            const SizedBox(height: 12),
+            _buildErrorCard(_fetchError!),
+          ],
+          if (_info != null) ...[
+            const SizedBox(height: 16),
+            _buildVideoInfoCard(_info!),
+            const SizedBox(height: 16),
+            SoftCard(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(
-                    Icons.history_rounded,
-                    size: 18,
-                    color: Color(0xFF9B9FAD),
-                  ),
-                  const SizedBox(width: 6),
-                  const Text(
-                    'Riwayat Download',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF1A1A2E),
-                    ),
-                  ),
-                  const Spacer(),
-                  TextButton(
-                    onPressed: () => setState(
-                      () => _downloads.removeWhere((d) => !d.isActive),
-                    ),
-                    child: const Text(
-                      'Hapus Selesai',
-                      style: TextStyle(fontSize: 12, color: Color(0xFF9B9FAD)),
-                    ),
-                  ),
+                  _buildDownloadTypeToggle(),
+                  const SizedBox(height: 16),
+                  if (_downloadType == 'video')
+                    _buildFormatPicker(_info!)
+                  else
+                    _buildAudioFormatPicker(_info!),
+                  const SizedBox(height: 16),
+                  _buildDownloadButton(),
                 ],
               ),
-              const SizedBox(height: 8),
-              ..._downloads.map(_buildDownloadCard),
-            ],
+            ),
           ],
-        ),
+          if (_info == null) ...[
+            const SizedBox(height: 24),
+            _buildPlatformSection(),
+          ],
+          if (_downloads.isNotEmpty) ...[
+            const SizedBox(height: 32),
+            Row(
+              children: [
+                Text('Riwayat Download',
+                    style: Theme.of(context).textTheme.titleMedium),
+                const Spacer(),
+                TextButton(
+                  onPressed: () => setState(
+                    () => _downloads.removeWhere((d) => !d.isActive),
+                  ),
+                  child: Text('Hapus Selesai',
+                      style: TextStyle(fontSize: 12, color: _sub)),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            ..._downloads.map(_buildDownloadCard),
+          ],
+        ],
       ),
     );
   }
@@ -367,44 +361,28 @@ class _HomeScreenState extends State<HomeScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'PLATFORM YANG DIDUKUNG',
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-            color: const Color(0xFF9B9FAD),
-            letterSpacing: 1,
-          ),
-        ),
-        const SizedBox(height: 10),
+        _label('PLATFORM YANG DIDUKUNG'),
         Wrap(
           spacing: 8,
           runSpacing: 8,
           children: _supportedPlatforms.map((p) {
             final (name, icon, color) = p;
             return Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: color.withOpacity(0.25)),
+                color: color.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(AppTheme.radiusChip),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    icon,
-                    style: TextStyle(fontSize: 11, color: color),
-                  ),
-                  const SizedBox(width: 5),
-                  Text(
-                    name,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: color.withOpacity(0.9),
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
+                  Text(icon, style: TextStyle(fontSize: 11, color: color)),
+                  const SizedBox(width: 6),
+                  Text(name,
+                      style: TextStyle(
+                          fontSize: 12,
+                          color: color,
+                          fontWeight: FontWeight.w600)),
                 ],
               ),
             );
@@ -414,77 +392,93 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // Kartu utama: input URL + tombol ambil info
   Widget _buildUrlSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'URL VIDEO',
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-            color: const Color(0xFF9B9FAD),
-            letterSpacing: 1,
-          ),
-        ),
-        const SizedBox(height: 10),
-        TextField(
-          controller: _urlCtrl,
-          style: const TextStyle(fontSize: 14),
-          keyboardType: TextInputType.url,
-          textInputAction: TextInputAction.go,
-          onSubmitted: (_) => _fetchInfo(),
-          onChanged: (_) {
-            if (_fetchError != null || _info != null) {
-              setState(() {
-                _fetchError = null;
-                _info = null;
-              });
-            }
-          },
-          decoration: InputDecoration(
-            hintText: 'Paste URL video di sini...',
-            hintStyle: const TextStyle(color: Colors.white24),
-            prefixIcon: const Icon(Icons.link_rounded, color: const Color(0xFF9B9FAD), size: 20),
-            suffixIcon: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (_urlCtrl.text.isNotEmpty)
+    return SoftCard(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: _accent.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(AppTheme.radiusChip),
+              ),
+              child: const Icon(Icons.link_rounded, color: _accent, size: 20),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Tempel link video',
+                        style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.w700)),
+                    Text('YouTube, TikTok, Instagram & lainnya',
+                        style: TextStyle(fontSize: 12, color: _sub)),
+                  ]),
+            ),
+          ]),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _urlCtrl,
+            style: const TextStyle(fontSize: 14),
+            keyboardType: TextInputType.url,
+            textInputAction: TextInputAction.go,
+            onSubmitted: (_) => _fetchInfo(),
+            onChanged: (_) {
+              if (_fetchError != null || _info != null) {
+                setState(() {
+                  _fetchError = null;
+                  _info = null;
+                });
+              } else {
+                setState(() {}); // tampilkan/sembunyikan tombol clear
+              }
+            },
+            decoration: InputDecoration(
+              hintText: 'https://...',
+              suffixIcon: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (_urlCtrl.text.isNotEmpty)
+                    IconButton(
+                      icon: Icon(Icons.clear_rounded, size: 18, color: _sub),
+                      onPressed: () => setState(() {
+                        _urlCtrl.clear();
+                        _info = null;
+                        _fetchError = null;
+                      }),
+                    ),
                   IconButton(
-                    icon: const Icon(Icons.clear_rounded, size: 18, color: Colors.white38),
-                    onPressed: () => setState(() {
-                      _urlCtrl.clear();
-                      _info = null;
-                      _fetchError = null;
-                    }),
-                    padding: EdgeInsets.zero,
+                    icon: const Icon(Icons.content_paste_rounded, size: 18),
+                    color: _accent,
+                    onPressed: _pasteFromClipboard,
+                    tooltip: 'Paste dari clipboard',
                   ),
-                IconButton(
-                  icon: const Icon(Icons.content_paste_rounded, size: 18),
-                  color: const Color(0xFF7B8BFF),
-                  onPressed: _pasteFromClipboard,
-                  tooltip: 'Paste dari clipboard',
-                ),
-              ],
+                ],
+              ),
             ),
           ),
-        ),
-        const SizedBox(height: 12),
-        ElevatedButton.icon(
-          onPressed: _fetching ? null : _fetchInfo,
-          icon: _fetching
-              ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Colors.white,
-                  ),
-                )
-              : const Icon(Icons.search_rounded),
-          label: Text(_fetching ? 'Mengambil info video...' : 'Ambil Info Video'),
-        ),
-      ],
+          const SizedBox(height: 12),
+          ElevatedButton.icon(
+            onPressed: _fetching ? null : _fetchInfo,
+            style: ElevatedButton.styleFrom(backgroundColor: _accent),
+            icon: _fetching
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: Colors.white),
+                  )
+                : const Icon(Icons.search_rounded),
+            label: Text(
+                _fetching ? 'Mengambil info video...' : 'Ambil Info Video'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -493,19 +487,19 @@ class _HomeScreenState extends State<HomeScreen> {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.red.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppTheme.radiusButton),
         border: Border.all(color: Colors.red.withOpacity(0.25)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.error_outline_rounded, color: Colors.redAccent, size: 18),
+          const Icon(Icons.error_outline_rounded,
+              color: Colors.redAccent, size: 18),
           const SizedBox(width: 10),
           Expanded(
-            child: Text(
-              error,
-              style: const TextStyle(color: Colors.redAccent, fontSize: 13, height: 1.4),
-            ),
+            child: Text(error,
+                style: const TextStyle(
+                    color: Colors.redAccent, fontSize: 13, height: 1.4)),
           ),
         ],
       ),
@@ -513,8 +507,16 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildVideoInfoCard(VideoInfo info) {
-    return Card(
+    return Container(
       clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(AppTheme.radiusCard),
+        border: Theme.of(context).brightness == Brightness.dark
+            ? Border.all(color: _border)
+            : null,
+        boxShadow: AppTheme.softShadow(context),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -528,70 +530,66 @@ class _HomeScreenState extends State<HomeScreen> {
                   fit: BoxFit.cover,
                   placeholder: (_, __) => Container(
                     height: 190,
-                    color: const Color(0xFFF5F6FA),
+                    color: _fill,
                     child: const Center(child: CircularProgressIndicator()),
                   ),
                   errorWidget: (_, __, ___) => Container(
                     height: 100,
-                    color: const Color(0xFFF5F6FA),
-                    child: const Center(
-                      child: Icon(Icons.broken_image_rounded, size: 40, color: Colors.white24),
+                    color: _fill,
+                    child: Center(
+                      child: Icon(Icons.broken_image_rounded,
+                          size: 40, color: _sub),
                     ),
                   ),
                 ),
                 if (info.durationStr != null)
                   Positioned(
-                    bottom: 8,
-                    right: 8,
+                    bottom: 10,
+                    right: 10,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.75),
-                        borderRadius: BorderRadius.circular(5),
+                        color: Colors.black.withOpacity(0.7),
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                      child: Text(
-                        info.durationStr!,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                        ),
-                      ),
+                      child: Text(info.durationStr!,
+                          style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white)),
                     ),
                   ),
                 Positioned(
-                  top: 8,
-                  left: 8,
+                  top: 10,
+                  left: 10,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF7B8BFF).withOpacity(0.85),
-                      borderRadius: BorderRadius.circular(6),
+                      color: Colors.black.withOpacity(0.55),
+                      borderRadius: BorderRadius.circular(AppTheme.radiusChip),
                     ),
                     child: Text(
                       '${_platformIcon(info.platform)} ${info.platform}',
                       style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                      ),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white),
                     ),
                   ),
                 ),
               ],
             ),
           Padding(
-            padding: const EdgeInsets.all(14),
+            padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   info.title,
                   style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    height: 1.35,
-                  ),
+                      fontSize: 15, fontWeight: FontWeight.w700, height: 1.35),
                   maxLines: 3,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -603,7 +601,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     if (info.uploader != null)
                       _metaItem(Icons.person_outline_rounded, info.uploader!),
                     if (info.viewCount != null)
-                      _metaItem(Icons.visibility_outlined, _formatViewCount(info.viewCount!)),
+                      _metaItem(Icons.visibility_outlined,
+                          _formatViewCount(info.viewCount!)),
                     if (info.formats.isNotEmpty)
                       _metaItem(
                         Icons.high_quality_rounded,
@@ -623,9 +622,9 @@ class _HomeScreenState extends State<HomeScreen> {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 13, color: Colors.white38),
+        Icon(icon, size: 14, color: _sub),
         const SizedBox(width: 4),
-        Text(label, style: const TextStyle(fontSize: 12, color: Colors.white54)),
+        Text(label, style: TextStyle(fontSize: 12, color: _sub)),
       ],
     );
   }
@@ -634,16 +633,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'PILIH KUALITAS',
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-            color: const Color(0xFF9B9FAD),
-            letterSpacing: 1,
-          ),
-        ),
-        const SizedBox(height: 10),
+        _label('PILIH KUALITAS'),
         Wrap(
           spacing: 8,
           runSpacing: 8,
@@ -653,37 +643,22 @@ class _HomeScreenState extends State<HomeScreen> {
               onTap: () => setState(() => _selectedFormat = fmt),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                 decoration: BoxDecoration(
-                  gradient: selected
-                      ? const LinearGradient(
-                          colors: [Color(0xFF7B8BFF), Color(0xFF5B6CF5)],
-                        )
-                      : null,
-                  color: selected ? null : const Color(0xFFF5F6FA),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: selected
-                        ? const Color(0xFF7B8BFF)
-                        : const Color(0xFFE4E7F0),
-                    width: selected ? 1.5 : 1,
-                  ),
-                  boxShadow: selected
-                      ? [
-                          BoxShadow(
-                            color: const Color(0xFF7B8BFF).withOpacity(0.3),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          )
-                        ]
-                      : null,
+                  color: selected ? _accent : _fill,
+                  borderRadius: BorderRadius.circular(AppTheme.radiusChip),
+                  border:
+                      Border.all(color: selected ? _accent : _border, width: 1),
                 ),
                 child: Text(
                   fmt.label,
                   style: TextStyle(
                     fontSize: 13,
-                    fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
-                    color: selected ? Colors.white : const Color(0xFF555770),
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                    color: selected
+                        ? Colors.white
+                        : Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
               ),
@@ -698,7 +673,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildDownloadButton() {
     final isAudio = _downloadType == 'audio';
-    final color = isAudio ? const Color(0xFF7B8BFF) : const Color(0xFF4ECDC4);
+    final color = isAudio ? _audioColor : _accent;
     final activeTask = _activeTaskFor();
 
     if (activeTask == null) {
@@ -706,7 +681,8 @@ class _HomeScreenState extends State<HomeScreen> {
         width: double.infinity,
         child: ElevatedButton.icon(
           onPressed: _startDownload,
-          icon: Icon(isAudio ? Icons.music_note_rounded : Icons.download_rounded),
+          icon:
+              Icon(isAudio ? Icons.music_note_rounded : Icons.download_rounded),
           label: Text(isAudio ? 'Download Audio' : 'Download Video'),
           style: ElevatedButton.styleFrom(backgroundColor: color),
         ),
@@ -721,27 +697,17 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return SizedBox(
       width: double.infinity,
-      height: 48,
+      height: 52,
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppTheme.radiusButton),
         child: Stack(
           children: [
-            // Latar abu-abu
             Container(color: color.withOpacity(0.12)),
-            // Fill bar progress
             if (!isPreparing && activeTask.progress > 0)
               FractionallySizedBox(
                 widthFactor: activeTask.progress.clamp(0.0, 1.0),
                 child: Container(color: color.withOpacity(0.30)),
               ),
-            // Garis border tipis
-            Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: color.withOpacity(0.45), width: 1.2),
-              ),
-            ),
-            // Konten baris
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
@@ -751,10 +717,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     height: 18,
                     child: isPreparing
                         ? CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: color,
-                          )
-                        : Icon(Icons.downloading_rounded, size: 18, color: color),
+                            strokeWidth: 2, color: color)
+                        : Icon(Icons.downloading_rounded,
+                            size: 18, color: color),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
@@ -763,23 +728,19 @@ class _HomeScreenState extends State<HomeScreen> {
                           ? 'Memproses di server...'
                           : activeTask.statusText,
                       style: TextStyle(
-                        color: color,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                      ),
+                          color: color,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   if (pct != null) ...[
                     const SizedBox(width: 8),
-                    Text(
-                      '$pct%',
-                      style: TextStyle(
-                        color: color,
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                    Text('$pct%',
+                        style: TextStyle(
+                            color: color,
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold)),
                   ],
                 ],
               ),
@@ -796,20 +757,11 @@ class _HomeScreenState extends State<HomeScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'JENIS DOWNLOAD',
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-            color: const Color(0xFF9B9FAD),
-            letterSpacing: 1,
-          ),
-        ),
-        const SizedBox(height: 10),
+        _label('JENIS DOWNLOAD'),
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
+            color: _fill,
+            borderRadius: BorderRadius.circular(AppTheme.radiusButton),
           ),
           padding: const EdgeInsets.all(4),
           child: Row(
@@ -818,13 +770,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 icon: Icons.videocam_rounded,
                 label: 'Video',
                 value: 'video',
-                color: const Color(0xFF4ECDC4),
+                color: _accent,
               ),
               _typeTab(
                 icon: Icons.music_note_rounded,
                 label: 'Audio Saja',
                 value: 'audio',
-                color: const Color(0xFF7B8BFF),
+                color: _audioColor,
               ),
             ],
           ),
@@ -847,23 +799,23 @@ class _HomeScreenState extends State<HomeScreen> {
           duration: const Duration(milliseconds: 180),
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            color: selected ? color.withOpacity(0.15) : Colors.transparent,
-            borderRadius: BorderRadius.circular(9),
-            border: selected
-                ? Border.all(color: color.withOpacity(0.5))
-                : null,
+            color: selected
+                ? Theme.of(context).colorScheme.surface
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(AppTheme.radiusChip),
+            boxShadow: selected ? AppTheme.softShadow(context) : null,
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: 16, color: selected ? color : Colors.white38),
+              Icon(icon, size: 16, color: selected ? color : _sub),
               const SizedBox(width: 6),
               Text(
                 label,
                 style: TextStyle(
                   fontSize: 13,
-                  fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
-                  color: selected ? color : Colors.white38,
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                  color: selected ? color : _sub,
                 ),
               ),
             ],
@@ -877,30 +829,17 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildAudioFormatPicker(VideoInfo info) {
     if (info.audioFormats.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 8),
-        child: Text(
-          'Format audio tidak tersedia untuk video ini.',
-          style: TextStyle(color: const Color(0xFF9B9FAD), fontSize: 13),
-        ),
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Text('Format audio tidak tersedia untuk video ini.',
+            style: TextStyle(color: _sub, fontSize: 13)),
       );
     }
-
-    final audioColor = const Color(0xFF7B8BFF);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'PILIH FORMAT AUDIO',
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-            color: const Color(0xFF9B9FAD),
-            letterSpacing: 1,
-          ),
-        ),
-        const SizedBox(height: 10),
+        _label('PILIH FORMAT AUDIO'),
         ...info.audioFormats.map((fmt) {
           final selected = _selectedAudioFormat?.audioFmt == fmt.audioFmt;
           return GestureDetector(
@@ -908,66 +847,44 @@ class _HomeScreenState extends State<HomeScreen> {
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 180),
               margin: const EdgeInsets.only(bottom: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               decoration: BoxDecoration(
-                color: selected
-                    ? audioColor.withOpacity(0.12)
-                    : const Color(0xFFF5F6FA),
-                borderRadius: BorderRadius.circular(12),
+                color: selected ? _audioColor.withOpacity(0.12) : _fill,
+                borderRadius: BorderRadius.circular(AppTheme.radiusButton),
                 border: Border.all(
-                  color: selected ? audioColor : const Color(0xFFE4E7F0),
+                  color: selected ? _audioColor : _border,
                   width: selected ? 1.5 : 1,
                 ),
               ),
               child: Row(
                 children: [
                   Container(
-                    width: 36,
-                    height: 36,
+                    width: 40,
+                    height: 40,
                     decoration: BoxDecoration(
-                      color: selected
-                          ? audioColor.withOpacity(0.2)
-                          : const Color(0xFFEEEEF5),
-                      borderRadius: BorderRadius.circular(8),
+                      color: _audioColor.withOpacity(selected ? 0.2 : 0.08),
+                      borderRadius: BorderRadius.circular(AppTheme.radiusChip),
                     ),
-                    child: Center(
-                      child: Text(
-                        fmt.quality,
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: selected ? audioColor : const Color(0xFF9B9FAD),
-                        ),
-                      ),
-                    ),
+                    child: Icon(Icons.music_note_rounded,
+                        size: 18, color: selected ? _audioColor : _sub),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          fmt.quality,
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: selected ? const Color(0xFF1A1A2E) : const Color(0xFF555770),
-                          ),
-                        ),
-                        if (fmt.description != null)
-                          Text(
-                            fmt.description!,
+                        Text(fmt.quality,
                             style: const TextStyle(
-                              fontSize: 11,
-                              color: const Color(0xFF9B9FAD),
-                            ),
-                          ),
+                                fontSize: 14, fontWeight: FontWeight.w600)),
+                        if (fmt.description != null)
+                          Text(fmt.description!,
+                              style: TextStyle(fontSize: 12, color: _sub)),
                       ],
                     ),
                   ),
                   if (selected)
-                    Icon(Icons.check_circle_rounded,
-                        color: audioColor, size: 20),
+                    const Icon(Icons.check_circle_rounded,
+                        color: _audioColor, size: 20),
                 ],
               ),
             ),
@@ -984,147 +901,144 @@ class _HomeScreenState extends State<HomeScreen> {
     final isFailed = task.status == DownloadStatus.failed;
     final isCancelled = task.status == DownloadStatus.cancelled;
 
-    Color statusColor = const Color(0xFF7B8BFF);
-    if (isDone) statusColor = const Color(0xFF4ECDC4);
+    Color statusColor = _accent;
+    if (isDone) statusColor = AppTheme.scannerColor;
     if (isFailed) statusColor = Colors.redAccent;
-    if (isCancelled) statusColor = const Color(0xFF9B9FAD);
+    if (isCancelled) statusColor = _sub;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: isDone
-            ? Border.all(color: const Color(0xFF4ECDC4).withOpacity(0.25))
-            : null,
-      ),
-      child: Row(
-        children: [
-          // Thumbnail
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: SizedBox(
-              width: 60,
-              height: 60,
-              child: task.thumbnail != null
-                  ? CachedNetworkImage(
-                      imageUrl: task.thumbnail!,
-                      fit: BoxFit.cover,
-                      errorWidget: (_, __, ___) => _taskIcon(statusColor, task.status),
-                    )
-                  : _taskIcon(statusColor, task.status),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: SoftCard(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            // Thumbnail
+            ClipRRect(
+              borderRadius: BorderRadius.circular(AppTheme.radiusChip),
+              child: SizedBox(
+                width: 60,
+                height: 60,
+                child: task.thumbnail != null
+                    ? CachedNetworkImage(
+                        imageUrl: task.thumbnail!,
+                        fit: BoxFit.cover,
+                        errorWidget: (_, __, ___) =>
+                            _taskIcon(statusColor, task.status),
+                      )
+                    : _taskIcon(statusColor, task.status),
+              ),
             ),
-          ),
-          const SizedBox(width: 12),
-          // Details
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  task.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  '${task.typeLabel} · ${task.platform}',
-                  style: const TextStyle(fontSize: 11, color: Colors.white38),
-                ),
-                const SizedBox(height: 5),
-                if (task.status == DownloadStatus.preparing) ...[
-                  // Fase 1: server sedang proses (yt-dlp + ffmpeg)
-                  Row(
-                    children: [
-                      SizedBox(
-                        width: 11,
-                        height: 11,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 1.5,
-                          color: statusColor,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Memproses di server...',
-                        style: TextStyle(fontSize: 11, color: statusColor),
-                      ),
-                    ],
+            const SizedBox(width: 12),
+            // Details
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    task.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                        fontSize: 14, fontWeight: FontWeight.w600),
                   ),
-                ] else if (task.status == DownloadStatus.downloading) ...[
-                  // Fase 2: transfer file dengan progress akurat
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        task.statusText,
-                        style: TextStyle(fontSize: 11, color: statusColor),
-                      ),
-                      if (task.progress > 0)
-                        Text(
-                          '${(task.progress * 100).toStringAsFixed(0)}%',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
+                  const SizedBox(height: 3),
+                  Text(
+                    '${task.typeLabel} · ${task.platform}',
+                    style: TextStyle(fontSize: 12, color: _sub),
+                  ),
+                  const SizedBox(height: 5),
+                  if (task.status == DownloadStatus.preparing) ...[
+                    // Fase 1: server sedang proses (yt-dlp + ffmpeg)
+                    Row(
+                      children: [
+                        SizedBox(
+                          width: 11,
+                          height: 11,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 1.5,
                             color: statusColor,
                           ),
                         ),
-                    ],
-                  ),
-                  const SizedBox(height: 5),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
-                    child: LinearProgressIndicator(
-                      value: task.progress > 0 ? task.progress : null,
-                      backgroundColor: const Color(0xFFE4E7F0),
-                      color: statusColor,
-                      minHeight: 5,
+                        const SizedBox(width: 6),
+                        Text(
+                          'Memproses di server...',
+                          style: TextStyle(fontSize: 11, color: statusColor),
+                        ),
+                      ],
                     ),
-                  ),
-                ] else ...[
-                  Text(
-                    task.statusText,
-                    style: TextStyle(fontSize: 11, color: statusColor),
-                  ),
+                  ] else if (task.status == DownloadStatus.downloading) ...[
+                    // Fase 2: transfer file dengan progress akurat
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          task.statusText,
+                          style: TextStyle(fontSize: 11, color: statusColor),
+                        ),
+                        if (task.progress > 0)
+                          Text(
+                            '${(task.progress * 100).toStringAsFixed(0)}%',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: statusColor,
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 5),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: LinearProgressIndicator(
+                        value: task.progress > 0 ? task.progress : null,
+                        backgroundColor: _border,
+                        color: statusColor,
+                        minHeight: 5,
+                      ),
+                    ),
+                  ] else ...[
+                    Text(
+                      task.statusText,
+                      style: TextStyle(fontSize: 11, color: statusColor),
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
-          ),
-          const SizedBox(width: 6),
-          // Action
-          if (isDone)
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (!kIsWeb && task.filePath != null) ...[
-                  _actionIcon(
-                    Icons.open_in_new_rounded,
-                    'Buka',
-                    () => OpenFilex.open(task.filePath!),
-                  ),
-                  _actionIcon(
-                    Icons.share_rounded,
-                    'Bagikan',
-                    () => Share.shareXFiles([XFile(task.filePath!)]),
-                  ),
-                ] else
-                  const Icon(Icons.check_circle_rounded,
-                      color: Color(0xFF4ECDC4), size: 24),
-              ],
-            )
-          else if (task.isActive)
-            _actionIcon(
-              Icons.cancel_rounded,
-              'Batalkan',
-              () {
-                task.cancelToken?.cancel();
-                setState(() => task.status = DownloadStatus.cancelled);
-              },
-              color: Colors.white30,
-            ),
-        ],
+            const SizedBox(width: 6),
+            // Action
+            if (isDone)
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (!kIsWeb && task.filePath != null) ...[
+                    _actionIcon(
+                      Icons.open_in_new_rounded,
+                      'Buka',
+                      () => OpenFilex.open(task.filePath!),
+                    ),
+                    _actionIcon(
+                      Icons.share_rounded,
+                      'Bagikan',
+                      () => Share.shareXFiles([XFile(task.filePath!)]),
+                    ),
+                  ] else
+                    const Icon(Icons.check_circle_rounded,
+                        color: AppTheme.scannerColor, size: 24),
+                ],
+              )
+            else if (task.isActive)
+              _actionIcon(
+                Icons.cancel_rounded,
+                'Batalkan',
+                () {
+                  task.cancelToken?.cancel();
+                  setState(() => task.status = DownloadStatus.cancelled);
+                },
+                color: _sub,
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -1154,7 +1068,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }) {
     return IconButton(
       icon: Icon(icon, size: 20),
-      color: color ?? const Color(0xFF9B9FAD),
+      color: color ?? _sub,
       onPressed: onTap,
       tooltip: tooltip,
       padding: EdgeInsets.zero,

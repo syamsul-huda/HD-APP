@@ -1,6 +1,9 @@
 import 'dart:convert';
 
 class RecentFile {
+  /// Key SharedPreferences daftar file terakhir (dipakai Reader & Dashboard).
+  static const prefKey = 'recent_files_reader';
+
   final String path;
   final String name;
   final String extension;

@@ -5,13 +5,14 @@ class AppSettings {
   AppSettings._();
 
   static final themeMode = ValueNotifier<ThemeMode>(ThemeMode.light);
-  static final viewMode = ValueNotifier<String>('list'); // 'list' | 'grid'
+  static final viewMode =
+      ValueNotifier<String>('grid'); // 'grid' (bento) | 'list'
 
   static Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
     final dark = prefs.getBool('dark_mode') ?? false;
     themeMode.value = dark ? ThemeMode.dark : ThemeMode.light;
-    viewMode.value = prefs.getString('view_mode') ?? 'list';
+    viewMode.value = prefs.getString('view_mode') ?? 'grid';
   }
 
   static Future<void> setDarkMode(bool dark) async {

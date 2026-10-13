@@ -11,6 +11,20 @@ class PdfViewerScreen extends StatefulWidget {
 
   const PdfViewerScreen({super.key, required this.path, required this.title});
 
+  // Penanda halaman terakhir dibaca. Key memakai nama + ukuran file karena
+  // path bisa berubah (file picker menyalin file ke folder cache).
+  static Future<String> bookmarkKey(String path) async {
+    final file = File(path);
+    final size = await file.exists() ? await file.length() : 0;
+    return 'pdf_last_page:${file.uri.pathSegments.last}:$size';
+  }
+
+  /// Halaman terakhir dibaca (0-based), null jika belum pernah dibaca.
+  static Future<int?> lastReadPage(String path) async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt(await bookmarkKey(path));
+  }
+
   @override
   State<PdfViewerScreen> createState() => _PdfViewerScreenState();
 }
@@ -31,15 +45,9 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
     _initBookmark();
   }
 
-  // Penanda halaman terakhir dibaca. Key memakai nama + ukuran file karena
-  // path bisa berubah (file picker menyalin file ke folder cache).
   Future<void> _initBookmark() async {
-    final prefs = await SharedPreferences.getInstance();
-    final file = File(widget.path);
-    final size = await file.exists() ? await file.length() : 0;
-    final name = file.uri.pathSegments.last;
-    _prefs = prefs;
-    _bookmarkKey = 'pdf_last_page:$name:$size';
+    _prefs = await SharedPreferences.getInstance();
+    _bookmarkKey = await PdfViewerScreen.bookmarkKey(widget.path);
     _maybeAskResume();
   }
 
