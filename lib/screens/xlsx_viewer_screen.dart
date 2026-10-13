@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:excel/excel.dart' hide Border;
 import 'package:flutter/material.dart';
+import '../utils/fullscreen_reader.dart';
 
 class XlsxViewerScreen extends StatefulWidget {
   final String path;
@@ -11,7 +12,8 @@ class XlsxViewerScreen extends StatefulWidget {
   State<XlsxViewerScreen> createState() => _XlsxViewerScreenState();
 }
 
-class _XlsxViewerScreenState extends State<XlsxViewerScreen> {
+class _XlsxViewerScreenState extends State<XlsxViewerScreen>
+    with FullscreenReaderMixin {
   Excel? _excel;
   String? _activeSheet;
   bool _loading = true;
@@ -43,11 +45,15 @@ class _XlsxViewerScreenState extends State<XlsxViewerScreen> {
       final excel = Excel.decodeBytes(bytes);
       setState(() {
         _excel = excel;
-        _activeSheet = excel.tables.keys.isNotEmpty ? excel.tables.keys.first : null;
+        _activeSheet =
+            excel.tables.keys.isNotEmpty ? excel.tables.keys.first : null;
         _loading = false;
       });
     } catch (e) {
-      setState(() { _error = e.toString(); _loading = false; });
+      setState(() {
+        _error = e.toString();
+        _loading = false;
+      });
     }
   }
 
@@ -59,7 +65,9 @@ class _XlsxViewerScreenState extends State<XlsxViewerScreen> {
     if (v is DoubleCellValue) {
       // Keep meaningful decimals, strip trailing zeros
       final s = v.value.toStringAsFixed(4);
-      return s.contains('.') ? s.replaceAll(RegExp(r'0+$'), '').replaceAll(RegExp(r'\.$'), '') : s;
+      return s.contains('.')
+          ? s.replaceAll(RegExp(r'0+$'), '').replaceAll(RegExp(r'\.$'), '')
+          : s;
     }
     if (v is BoolCellValue) return v.value ? 'TRUE' : 'FALSE';
     if (v is DateCellValue) {
@@ -74,7 +82,8 @@ class _XlsxViewerScreenState extends State<XlsxViewerScreen> {
 
   /// Pre-compute column widths based on actual cell content for a sheet.
   List<double> _getColWidths(String sheetName) {
-    if (_colWidthCache.containsKey(sheetName)) return _colWidthCache[sheetName]!;
+    if (_colWidthCache.containsKey(sheetName))
+      return _colWidthCache[sheetName]!;
     final sheet = _excel!.tables[sheetName]!;
     final rows = sheet.rows;
     if (rows.isEmpty) return [];
@@ -89,7 +98,8 @@ class _XlsxViewerScreenState extends State<XlsxViewerScreen> {
         final text = _cellText(row[ci]);
         if (text.isEmpty) continue;
         // Header row: treat font as bold (slightly wider per char)
-        final w = text.length * (ri == 0 ? _charWidth * 1.15 : _charWidth) + _cellPadH;
+        final w = text.length * (ri == 0 ? _charWidth * 1.15 : _charWidth) +
+            _cellPadH;
         if (w > widths[ci]) widths[ci] = w.clamp(_minColWidth, _maxColWidth);
       }
     }
@@ -112,45 +122,56 @@ class _XlsxViewerScreenState extends State<XlsxViewerScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF0F0F0),
-      appBar: AppBar(
-        backgroundColor: _excelGreen,
-        title: Text(widget.title,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(color: Colors.white, fontSize: 15)),
-        iconTheme: const IconThemeData(color: Colors.white),
-        actions: [
-          Container(
-            margin: const EdgeInsets.only(right: 12),
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.table_chart_outlined, size: 14, color: Colors.white70),
-                SizedBox(width: 4),
-                Text('XLSX',
-                    style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.white70,
-                        fontWeight: FontWeight.bold)),
+      appBar: isFullscreen
+          ? null
+          : AppBar(
+              backgroundColor: _excelGreen,
+              title: Text(widget.title,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: Colors.white, fontSize: 15)),
+              iconTheme: const IconThemeData(color: Colors.white),
+              actions: [
+                Container(
+                  margin: const EdgeInsets.only(right: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.table_chart_outlined,
+                          size: 14, color: Colors.white70),
+                      SizedBox(width: 4),
+                      Text('XLSX',
+                          style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.white70,
+                              fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                ),
+                fullscreenButton(),
               ],
             ),
-          ),
-        ],
+      body: fullscreenBody(
+        child: _loading
+            ? const Center(child: CircularProgressIndicator(color: _excelGreen))
+            : _error != null
+                ? _buildError()
+                : Column(
+                    children: [
+                      // Tab sheet tetap tampil agar bisa ganti sheet
+                      SafeArea(
+                          top: isFullscreen,
+                          bottom: false,
+                          child: _buildSheetTabs()),
+                      Expanded(child: _buildTable()),
+                    ],
+                  ),
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator(color: _excelGreen))
-          : _error != null
-              ? _buildError()
-              : Column(
-                  children: [
-                    _buildSheetTabs(),
-                    Expanded(child: _buildTable()),
-                  ],
-                ),
     );
   }
 
@@ -193,7 +214,8 @@ class _XlsxViewerScreenState extends State<XlsxViewerScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 14),
               decoration: BoxDecoration(
                 color: active ? Colors.white : Colors.transparent,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(4)),
               ),
               child: Center(
                 child: Text(
@@ -224,8 +246,8 @@ class _XlsxViewerScreenState extends State<XlsxViewerScreen> {
 
     if (rows.isEmpty) {
       return const Center(
-          child: Text('Sheet kosong',
-              style: TextStyle(color: Color(0xFF9B9FAD))));
+          child:
+              Text('Sheet kosong', style: TextStyle(color: Color(0xFF9B9FAD))));
     }
 
     final colWidths = _getColWidths(_activeSheet!);

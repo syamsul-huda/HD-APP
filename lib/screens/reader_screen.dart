@@ -5,6 +5,7 @@ import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/recent_file.dart';
+import '../utils/fullscreen_reader.dart';
 import 'pdf_viewer_screen.dart';
 import 'docx_viewer_screen.dart';
 import 'xlsx_viewer_screen.dart';
@@ -81,11 +82,17 @@ class _ReaderScreenState extends State<ReaderScreen> {
         type: FileType.custom,
         allowedExtensions: [
           'pdf',
-          'doc', 'docx',
-          'xls', 'xlsx',
-          'ppt', 'pptx',
-          'txt', 'csv',
-          'odt', 'ods', 'odp',
+          'doc',
+          'docx',
+          'xls',
+          'xlsx',
+          'ppt',
+          'pptx',
+          'txt',
+          'csv',
+          'odt',
+          'ods',
+          'odp',
         ],
         withData: false,
         withReadStream: false,
@@ -133,40 +140,52 @@ class _ReaderScreenState extends State<ReaderScreen> {
     if (!mounted) return;
 
     if (ext == 'pdf') {
-      await Navigator.push(context,
-          MaterialPageRoute(builder: (_) => PdfViewerScreen(path: path, title: name)));
+      await Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (_) => PdfViewerScreen(path: path, title: name)));
       return;
     }
 
     if (ext == 'txt' || ext == 'csv') {
       final content = await File(path).readAsString();
       if (!mounted) return;
-      await Navigator.push(context,
-          MaterialPageRoute(builder: (_) => _TextViewerScreen(title: name, content: content)));
+      await Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (_) =>
+                  _TextViewerScreen(title: name, content: content)));
       return;
     }
 
     if (ext == 'docx' || ext == 'odt') {
-      await Navigator.push(context,
-          MaterialPageRoute(builder: (_) => DocxViewerScreen(path: path, title: name)));
+      await Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (_) => DocxViewerScreen(path: path, title: name)));
       return;
     }
 
     if (ext == 'xlsx' || ext == 'ods') {
-      await Navigator.push(context,
-          MaterialPageRoute(builder: (_) => XlsxViewerScreen(path: path, title: name)));
+      await Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (_) => XlsxViewerScreen(path: path, title: name)));
       return;
     }
 
     if (ext == 'pptx' || ext == 'odp') {
-      await Navigator.push(context,
-          MaterialPageRoute(builder: (_) => PptxViewerScreen(path: path, title: name)));
+      await Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (_) => PptxViewerScreen(path: path, title: name)));
       return;
     }
 
     final result = await OpenFilex.open(path);
     if (result.type != ResultType.done && mounted) {
-      _snack('Format .${ext.toUpperCase()} tidak didukung secara langsung. Install WPS Office untuk membukanya.');
+      _snack(
+          'Format .${ext.toUpperCase()} tidak didukung secara langsung. Install WPS Office untuk membukanya.');
     }
   }
 
@@ -255,7 +274,8 @@ class _ReaderScreenState extends State<ReaderScreen> {
             children: _formats.map((f) {
               final (label, icon, color) = f;
               return Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
                 decoration: BoxDecoration(
                   color: color.withOpacity(0.08),
                   borderRadius: BorderRadius.circular(8),
@@ -291,7 +311,8 @@ class _ReaderScreenState extends State<ReaderScreen> {
           ? const SizedBox(
               width: 18,
               height: 18,
-              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+              child: CircularProgressIndicator(
+                  strokeWidth: 2, color: Colors.white),
             )
           : const Icon(Icons.folder_open_rounded),
       label: Text(_loading ? 'Membuka...' : 'Pilih File Dokumen'),
@@ -308,7 +329,8 @@ class _ReaderScreenState extends State<ReaderScreen> {
       children: [
         Row(
           children: [
-            const Icon(Icons.history_rounded, size: 18, color: Color(0xFF9B9FAD)),
+            const Icon(Icons.history_rounded,
+                size: 18, color: Color(0xFF9B9FAD)),
             const SizedBox(width: 6),
             const Text(
               'Baru Dibuka',
@@ -407,7 +429,8 @@ class _ReaderScreenState extends State<ReaderScreen> {
                     Row(
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
                             color: color.withOpacity(0.12),
                             borderRadius: BorderRadius.circular(4),
@@ -443,56 +466,96 @@ class _ReaderScreenState extends State<ReaderScreen> {
 
   Color _extColor(String ext) {
     switch (ext) {
-      case 'pdf': return const Color(0xFFE53935);
-      case 'doc': case 'docx': case 'odt': return const Color(0xFF1565C0);
-      case 'xls': case 'xlsx': case 'ods': return const Color(0xFF217346);
-      case 'ppt': case 'pptx': case 'odp': return const Color(0xFFD24726);
-      case 'txt': return const Color(0xFF546E7A);
-      case 'csv': return const Color(0xFF00695C);
-      default: return const Color(0xFF7B8BFF);
+      case 'pdf':
+        return const Color(0xFFE53935);
+      case 'doc':
+      case 'docx':
+      case 'odt':
+        return const Color(0xFF1565C0);
+      case 'xls':
+      case 'xlsx':
+      case 'ods':
+        return const Color(0xFF217346);
+      case 'ppt':
+      case 'pptx':
+      case 'odp':
+        return const Color(0xFFD24726);
+      case 'txt':
+        return const Color(0xFF546E7A);
+      case 'csv':
+        return const Color(0xFF00695C);
+      default:
+        return const Color(0xFF7B8BFF);
     }
   }
 
   IconData _extIcon(String ext) {
     switch (ext) {
-      case 'pdf': return Icons.picture_as_pdf_rounded;
-      case 'doc': case 'docx': case 'odt': return Icons.article_rounded;
-      case 'xls': case 'xlsx': case 'ods': return Icons.table_chart_rounded;
-      case 'ppt': case 'pptx': case 'odp': return Icons.slideshow_rounded;
-      case 'txt': return Icons.text_snippet_rounded;
-      case 'csv': return Icons.grid_on_rounded;
-      default: return Icons.insert_drive_file_rounded;
+      case 'pdf':
+        return Icons.picture_as_pdf_rounded;
+      case 'doc':
+      case 'docx':
+      case 'odt':
+        return Icons.article_rounded;
+      case 'xls':
+      case 'xlsx':
+      case 'ods':
+        return Icons.table_chart_rounded;
+      case 'ppt':
+      case 'pptx':
+      case 'odp':
+        return Icons.slideshow_rounded;
+      case 'txt':
+        return Icons.text_snippet_rounded;
+      case 'csv':
+        return Icons.grid_on_rounded;
+      default:
+        return Icons.insert_drive_file_rounded;
     }
   }
 }
 
 // ── In-app text viewer ────────────────────────────────────────────────────────
 
-class _TextViewerScreen extends StatelessWidget {
+class _TextViewerScreen extends StatefulWidget {
   final String title;
   final String content;
 
   const _TextViewerScreen({required this.title, required this.content});
 
   @override
+  State<_TextViewerScreen> createState() => _TextViewerScreenState();
+}
+
+class _TextViewerScreenState extends State<_TextViewerScreen>
+    with FullscreenReaderMixin {
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        title: Text(title,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(color: Color(0xFF1A1A2E))),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: SelectableText(
-          content,
-          style: const TextStyle(
-            fontSize: 14,
-            height: 1.7,
-            fontFamily: 'monospace',
-            color: Color(0xFF1A1A2E),
+      appBar: isFullscreen
+          ? null
+          : AppBar(
+              backgroundColor: Colors.white,
+              title: Text(widget.title,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: Color(0xFF1A1A2E))),
+              actions: [fullscreenButton(color: const Color(0xFF1A1A2E))],
+            ),
+      body: fullscreenBody(
+        child: SafeArea(
+          top: isFullscreen,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: SelectableText(
+              widget.content,
+              style: const TextStyle(
+                fontSize: 14,
+                height: 1.7,
+                fontFamily: 'monospace',
+                color: Color(0xFF1A1A2E),
+              ),
+            ),
           ),
         ),
       ),

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:archive/archive.dart';
 import 'package:flutter/material.dart';
 import 'package:xml/xml.dart';
+import '../utils/fullscreen_reader.dart';
 
 // PowerPoint-like presentation viewer
 class PptxViewerScreen extends StatefulWidget {
@@ -14,7 +15,8 @@ class PptxViewerScreen extends StatefulWidget {
   State<PptxViewerScreen> createState() => _PptxViewerScreenState();
 }
 
-class _PptxViewerScreenState extends State<PptxViewerScreen> {
+class _PptxViewerScreenState extends State<PptxViewerScreen>
+    with FullscreenReaderMixin {
   List<_Slide> _slides = [];
   int _current = 0;
   bool _loading = true;
@@ -37,8 +39,10 @@ class _PptxViewerScreenState extends State<PptxViewerScreen> {
           .where((f) => RegExp(r'^ppt/slides/slide\d+\.xml$').hasMatch(f.name))
           .toList()
         ..sort((a, b) {
-          final na = int.tryParse(RegExp(r'\d+').stringMatch(a.name) ?? '0') ?? 0;
-          final nb = int.tryParse(RegExp(r'\d+').stringMatch(b.name) ?? '0') ?? 0;
+          final na =
+              int.tryParse(RegExp(r'\d+').stringMatch(a.name) ?? '0') ?? 0;
+          final nb =
+              int.tryParse(RegExp(r'\d+').stringMatch(b.name) ?? '0') ?? 0;
           return na.compareTo(nb);
         });
 
@@ -50,9 +54,11 @@ class _PptxViewerScreenState extends State<PptxViewerScreen> {
         String title = '';
         final textBlocks = <_TextBlock>[];
 
-        for (final txBody in doc.descendantElements.where((e) => e.localName == 'txBody')) {
+        for (final txBody
+            in doc.descendantElements.where((e) => e.localName == 'txBody')) {
           final paras = <String>[];
-          for (final para in txBody.descendantElements.where((e) => e.localName == 'p')) {
+          for (final para
+              in txBody.descendantElements.where((e) => e.localName == 'p')) {
             final text = para.descendantElements
                 .where((e) => e.localName == 't')
                 .map((e) => e.innerText)
@@ -70,7 +76,8 @@ class _PptxViewerScreenState extends State<PptxViewerScreen> {
           if ((phType == 'title' || phType == 'ctrTitle') && title.isEmpty) {
             title = paras.join(' ');
           } else if (phType == 'subTitle' || phIdx == '1') {
-            textBlocks.add(_TextBlock(text: paras.join('\n'), isSubtitle: true));
+            textBlocks
+                .add(_TextBlock(text: paras.join('\n'), isSubtitle: true));
           } else {
             for (final p in paras) {
               textBlocks.add(_TextBlock(text: p));
@@ -81,9 +88,15 @@ class _PptxViewerScreenState extends State<PptxViewerScreen> {
         slides.add(_Slide(title: title, blocks: textBlocks));
       }
 
-      setState(() { _slides = slides; _loading = false; });
+      setState(() {
+        _slides = slides;
+        _loading = false;
+      });
     } catch (e) {
-      setState(() { _error = e.toString(); _loading = false; });
+      setState(() {
+        _error = e.toString();
+        _loading = false;
+      });
     }
   }
 
@@ -91,52 +104,80 @@ class _PptxViewerScreenState extends State<PptxViewerScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF2D2D2D),
-      appBar: AppBar(
-        backgroundColor: _pptOrange,
-        title: Text(widget.title,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(color: Colors.white, fontSize: 15)),
-        iconTheme: const IconThemeData(color: Colors.white),
-        actions: [
-          if (!_loading && _slides.isNotEmpty)
-            Container(
-              margin: const EdgeInsets.only(right: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                '${_current + 1} / ${_slides.length}',
-                style: const TextStyle(fontSize: 12, color: Colors.white),
-              ),
-            ),
-          Container(
-            margin: const EdgeInsets.only(right: 12),
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: const Text('PPTX',
-                style: TextStyle(fontSize: 11, color: Colors.white70, fontWeight: FontWeight.bold)),
-          ),
-        ],
-      ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator(color: _pptOrange))
-          : _error != null
-              ? _buildError()
-              : _slides.isEmpty
-                  ? const Center(
-                      child: Text('Tidak ada konten',
-                          style: TextStyle(color: Colors.white38)))
-                  : Column(
-                      children: [
-                        _buildSlideNav(),
-                        Expanded(child: _buildSlideContent(_slides[_current])),
-                      ],
+      appBar: isFullscreen
+          ? null
+          : AppBar(
+              backgroundColor: _pptOrange,
+              title: Text(widget.title,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: Colors.white, fontSize: 15)),
+              iconTheme: const IconThemeData(color: Colors.white),
+              actions: [
+                if (!_loading && _slides.isNotEmpty)
+                  Container(
+                    margin: const EdgeInsets.only(right: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
                     ),
+                    child: Text(
+                      '${_current + 1} / ${_slides.length}',
+                      style: const TextStyle(fontSize: 12, color: Colors.white),
+                    ),
+                  ),
+                Container(
+                  margin: const EdgeInsets.only(right: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: const Text('PPTX',
+                      style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.white70,
+                          fontWeight: FontWeight.bold)),
+                ),
+                fullscreenButton(),
+              ],
+            ),
+      body: fullscreenBody(
+        overlay: !_loading && _slides.isNotEmpty
+            ? fullscreenBadge('${_current + 1} / ${_slides.length}')
+            : null,
+        child: _loading
+            ? const Center(child: CircularProgressIndicator(color: _pptOrange))
+            : _error != null
+                ? _buildError()
+                : _slides.isEmpty
+                    ? const Center(
+                        child: Text('Tidak ada konten',
+                            style: TextStyle(color: Colors.white38)))
+                    : isFullscreen
+                        ? GestureDetector(
+                            // Geser kiri/kanan untuk pindah slide
+                            onHorizontalDragEnd: (d) {
+                              final v = d.primaryVelocity ?? 0;
+                              if (v < -200 && _current < _slides.length - 1) {
+                                setState(() => _current++);
+                              } else if (v > 200 && _current > 0) {
+                                setState(() => _current--);
+                              }
+                            },
+                            child: SafeArea(
+                                child: _buildSlideContent(_slides[_current])),
+                          )
+                        : Column(
+                            children: [
+                              _buildSlideNav(),
+                              Expanded(
+                                  child: _buildSlideContent(_slides[_current])),
+                            ],
+                          ),
+      ),
     );
   }
 
@@ -235,7 +276,8 @@ class _PptxViewerScreenState extends State<PptxViewerScreen> {
                   padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
                   decoration: BoxDecoration(
                     color: _pptOrange,
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+                    borderRadius:
+                        const BorderRadius.vertical(top: Radius.circular(4)),
                   ),
                   child: Text(
                     slide.title,
@@ -252,7 +294,8 @@ class _PptxViewerScreenState extends State<PptxViewerScreen> {
                   padding: const EdgeInsets.fromLTRB(24, 14, 24, 10),
                   decoration: const BoxDecoration(
                     color: Color(0xFFF5F5F5),
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(4)),
+                    borderRadius:
+                        BorderRadius.vertical(top: Radius.circular(4)),
                   ),
                   child: Text(
                     'Slide ${_current + 1}',
@@ -300,7 +343,8 @@ class _PptxViewerScreenState extends State<PptxViewerScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Padding(
-                                  padding: const EdgeInsets.only(top: 5, right: 8),
+                                  padding:
+                                      const EdgeInsets.only(top: 5, right: 8),
                                   child: Container(
                                     width: 6,
                                     height: 6,
