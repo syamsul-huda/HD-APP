@@ -167,7 +167,7 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
                 _saveLastPage(_currentPage);
               },
               onError: (err) => _showError(err.toString()),
-              onPageError: (page, err) => _showError('Halaman $page: $err'),
+              onPageError: (page, err) => _showError('Page $page: $err'),
             ),
             if (!_isReady)
               Container(
@@ -178,7 +178,7 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
                     children: [
                       CircularProgressIndicator(color: Colors.white70),
                       SizedBox(height: 12),
-                      Text('Memuat PDF...',
+                      Text('Loading PDF...',
                           style: TextStyle(color: Colors.white54)),
                     ],
                   ),
@@ -203,7 +203,7 @@ class _PdfViewerScreenState extends State<PdfViewerScreen>
                       color: _currentPage > 0 ? Colors.white70 : Colors.white24,
                     ),
                     Text(
-                      'Halaman ${_currentPage + 1} dari $_totalPages',
+                      'Page ${_currentPage + 1} of $_totalPages',
                       style:
                           const TextStyle(fontSize: 13, color: Colors.white60),
                     ),

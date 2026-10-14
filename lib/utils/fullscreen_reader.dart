@@ -37,7 +37,7 @@ mixin FullscreenReaderMixin<T extends StatefulWidget> on State<T> {
   /// Tombol untuk AppBar actions.
   Widget fullscreenButton({Color color = Colors.white}) {
     return IconButton(
-      tooltip: 'Layar penuh',
+      tooltip: 'Fullscreen',
       icon: Icon(Icons.fullscreen_rounded, color: color),
       onPressed: () => setFullscreen(true),
     );
@@ -69,7 +69,7 @@ mixin FullscreenReaderMixin<T extends StatefulWidget> on State<T> {
                   color: Colors.black.withOpacity(0.45),
                   shape: const CircleBorder(),
                   child: IconButton(
-                    tooltip: 'Keluar layar penuh',
+                    tooltip: 'Exit fullscreen',
                     icon: const Icon(Icons.fullscreen_exit_rounded,
                         color: Colors.white),
                     onPressed: () => setFullscreen(false),

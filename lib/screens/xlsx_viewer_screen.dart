@@ -184,7 +184,7 @@ class _XlsxViewerScreenState extends State<XlsxViewerScreen>
           children: [
             const Icon(Icons.error_outline, color: Colors.redAccent, size: 48),
             const SizedBox(height: 12),
-            Text('Gagal membaca file:\n$_error',
+            Text('Failed to read file:\n$_error',
                 textAlign: TextAlign.center,
                 style: const TextStyle(color: Color(0xFF555770))),
           ],
@@ -237,8 +237,7 @@ class _XlsxViewerScreenState extends State<XlsxViewerScreen>
   Widget _buildTable() {
     if (_activeSheet == null || _excel == null) {
       return const Center(
-          child: Text('Tidak ada data',
-              style: TextStyle(color: Color(0xFF9B9FAD))));
+          child: Text('No data', style: TextStyle(color: Color(0xFF9B9FAD))));
     }
 
     final sheet = _excel!.tables[_activeSheet!]!;
@@ -247,7 +246,7 @@ class _XlsxViewerScreenState extends State<XlsxViewerScreen>
     if (rows.isEmpty) {
       return const Center(
           child:
-              Text('Sheet kosong', style: TextStyle(color: Color(0xFF9B9FAD))));
+              Text('Empty sheet', style: TextStyle(color: Color(0xFF9B9FAD))));
     }
 
     final colWidths = _getColWidths(_activeSheet!);

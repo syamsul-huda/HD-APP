@@ -6,8 +6,8 @@ class VideoFormat {
   final String? filesizeStr;
   final int? fps;
   final bool isAudio;
-  final String? audioFmt;      // 'mp3', 'm4a', 'opus' — hanya untuk audio
-  final String? description;   // label panjang untuk audio
+  final String? audioFmt; // 'mp3', 'm4a', 'opus' — hanya untuk audio
+  final String? description; // label panjang untuk audio
 
   const VideoFormat({
     required this.formatId,
@@ -51,8 +51,8 @@ class VideoInfo {
   final String? uploader;
   final String platform;
   final int? viewCount;
-  final List<VideoFormat> formats;       // format video
-  final List<VideoFormat> audioFormats;  // format audio saja
+  final List<VideoFormat> formats; // format video
+  final List<VideoFormat> audioFormats; // format audio saja
 
   const VideoInfo({
     required this.title,

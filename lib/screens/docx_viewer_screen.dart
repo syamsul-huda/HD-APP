@@ -39,7 +39,7 @@ class _DocxViewerScreenState extends State<DocxViewerScreen>
           break;
         }
       }
-      if (docFile == null) throw Exception('Format tidak valid');
+      if (docFile == null) throw Exception('Invalid format');
 
       final xmlStr = utf8.decode(docFile.content as List<int>);
       final doc = XmlDocument.parse(xmlStr);
@@ -51,7 +51,7 @@ class _DocxViewerScreenState extends State<DocxViewerScreen>
           break;
         }
       }
-      if (body == null) throw Exception('Konten tidak ditemukan');
+      if (body == null) throw Exception('Content not found');
 
       final result = <_Para>[];
       for (final para in body.childElements.where((e) => e.localName == 'p')) {
@@ -227,7 +227,7 @@ class _DocxViewerScreenState extends State<DocxViewerScreen>
           children: [
             const Icon(Icons.error_outline, color: Colors.redAccent, size: 48),
             const SizedBox(height: 12),
-            Text('Gagal membaca dokumen:\n$_error',
+            Text('Failed to read document:\n$_error',
                 textAlign: TextAlign.center,
                 style: const TextStyle(color: Color(0xFF555770))),
           ],

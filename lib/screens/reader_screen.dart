@@ -3,10 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../models/recent_file.dart';
+import '../services/history_service.dart';
 import '../utils/app_theme.dart';
 import '../utils/fullscreen_reader.dart';
+import '../utils/swipe_to_delete.dart';
 import 'pdf_viewer_screen.dart';
 import 'docx_viewer_screen.dart';
 import 'xlsx_viewer_screen.dart';
@@ -20,9 +21,6 @@ class ReaderScreen extends StatefulWidget {
 }
 
 class _ReaderScreenState extends State<ReaderScreen> {
-  static const _prefKey = RecentFile.prefKey;
-  static const _maxRecent = 20;
-
   List<RecentFile> _recent = [];
   Map<String, int> _pdfPages = {};
   bool _loading = false;
@@ -43,39 +41,19 @@ class _ReaderScreenState extends State<ReaderScreen> {
   }
 
   Future<void> _loadRecent() async {
-    final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_prefKey);
-    if (raw == null) return;
-    try {
-      final list = RecentFile.decodeList(raw);
-      final valid = <RecentFile>[];
-      for (final f in list) {
-        if (await File(f.path).exists()) valid.add(f);
-      }
-      setState(() => _recent = valid);
-      _loadPdfPages();
-    } catch (_) {}
-  }
-
-  Future<void> _saveRecent() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_prefKey, RecentFile.encodeList(_recent));
+    final list = await HistoryService.loadRecentFiles();
+    final valid = <RecentFile>[];
+    for (final f in list) {
+      if (await File(f.path).exists()) valid.add(f);
+    }
+    if (!mounted) return;
+    setState(() => _recent = valid);
+    _loadPdfPages();
   }
 
   Future<void> _addToRecent(String path, String name, String ext) async {
-    _recent.removeWhere((f) => f.path == path);
-    _recent.insert(
-      0,
-      RecentFile(
-        path: path,
-        name: name,
-        extension: ext.toLowerCase(),
-        lastOpened: DateTime.now().millisecondsSinceEpoch,
-      ),
-    );
-    if (_recent.length > _maxRecent) _recent = _recent.sublist(0, _maxRecent);
-    setState(() {});
-    await _saveRecent();
+    final items = await HistoryService.touchRecentFile(path, name, ext);
+    if (mounted) setState(() => _recent = items);
   }
 
   Future<void> _pickFile() async {
@@ -118,7 +96,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
     }
 
     if (path == null) {
-      _snack('Tidak dapat membaca file ini');
+      _snack('Unable to read this file');
       return;
     }
 
@@ -130,9 +108,8 @@ class _ReaderScreenState extends State<ReaderScreen> {
 
   Future<void> _openRecent(RecentFile file) async {
     if (!await File(file.path).exists()) {
-      setState(() => _recent.removeWhere((f) => f.path == file.path));
-      await _saveRecent();
-      _snack('File tidak ditemukan, mungkin sudah dipindah atau dihapus');
+      await _removeRecent(file.path);
+      _snack('File not found. It may have been moved or deleted.');
       return;
     }
     await _addToRecent(file.path, file.name, file.extension);
@@ -145,13 +122,26 @@ class _ReaderScreenState extends State<ReaderScreen> {
     _loadPdfPages();
     if (!opened && mounted) {
       _snack(
-          'Format .${ext.toUpperCase()} tidak didukung secara langsung. Install WPS Office untuk membukanya.');
+          '.${ext.toUpperCase()} files are not supported in-app. Install WPS Office to open them.');
     }
   }
 
-  void _removeRecent(String path) async {
+  Future<void> _removeRecent(String path) async {
     setState(() => _recent.removeWhere((f) => f.path == path));
-    await _saveRecent();
+    final all = await HistoryService.loadRecentFiles()
+      ..removeWhere((f) => f.path == path);
+    await HistoryService.saveRecentFiles(all);
+  }
+
+  Future<void> _clearAll() async {
+    final ok = await confirmDialog(context,
+        title: 'Clear all history?',
+        message: 'All ${_recent.length} documents will be removed from Recent. '
+            'The files themselves will not be deleted.',
+        confirmLabel: 'Clear all');
+    if (!ok) return;
+    setState(() => _recent.clear());
+    await HistoryService.saveRecentFiles([]);
   }
 
   void _snack(String msg) {
@@ -168,7 +158,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Pembaca Dokumen')),
+      appBar: AppBar(title: const Text('Document Reader')),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
         children: [
@@ -215,13 +205,13 @@ class _ReaderScreenState extends State<ReaderScreen> {
         Expanded(
           child:
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(_loading ? 'Membuka...' : 'Pilih File Dokumen',
+            Text(_loading ? 'Opening...' : 'Choose a Document',
                 style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w800,
                     color: Colors.white)),
             const SizedBox(height: 4),
-            Text('Dibaca langsung di aplikasi',
+            Text('Read it right inside the app',
                 style: TextStyle(
                     fontSize: 13, color: Colors.white.withOpacity(0.85))),
           ]),
@@ -237,7 +227,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'FORMAT YANG DIDUKUNG',
+            'SUPPORTED FORMATS',
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w700,
@@ -284,19 +274,19 @@ class _ReaderScreenState extends State<ReaderScreen> {
       children: [
         Row(
           children: [
-            Text('Baru Dibuka', style: theme.textTheme.titleMedium),
+            Text('Recent', style: theme.textTheme.titleMedium),
             const Spacer(),
             TextButton(
-              onPressed: () async {
-                setState(() => _recent.clear());
-                await _saveRecent();
-              },
-              child: Text('Hapus Semua',
+              onPressed: _clearAll,
+              child: Text('Clear all',
                   style: TextStyle(
                       fontSize: 12, color: theme.colorScheme.onSurfaceVariant)),
             ),
           ],
         ),
+        Text('Swipe left on a document to delete it',
+            style: TextStyle(
+                fontSize: 12, color: theme.colorScheme.onSurfaceVariant)),
         const SizedBox(height: 8),
         ..._recent.map((f) => _buildRecentCard(f, theme)),
       ],
@@ -307,31 +297,17 @@ class _ReaderScreenState extends State<ReaderScreen> {
     final color = _extColor(file.extension);
     final icon = _extIcon(file.extension);
     final sub = theme.colorScheme.onSurfaceVariant;
-    final diff = DateTime.now().difference(file.date);
-    final timeStr = diff.inDays > 0
-        ? '${diff.inDays} hari lalu'
-        : diff.inHours > 0
-            ? '${diff.inHours} jam lalu'
-            : diff.inMinutes > 0
-                ? '${diff.inMinutes} menit lalu'
-                : 'Baru saja';
+    final timeStr = timeAgo(file.date);
     final page = _pdfPages[file.path];
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
-      child: Dismissible(
-        key: Key(file.path),
-        direction: DismissDirection.endToStart,
-        background: Container(
-          alignment: Alignment.centerRight,
-          padding: const EdgeInsets.only(right: 20),
-          decoration: BoxDecoration(
-            color: Colors.red.withOpacity(0.12),
-            borderRadius: BorderRadius.circular(AppTheme.radiusCard),
-          ),
-          child: const Icon(Icons.delete_rounded, color: Colors.redAccent),
-        ),
-        onDismissed: (_) => _removeRecent(file.path),
+      child: SwipeToDelete(
+        key: ValueKey(file.path),
+        confirmTitle: 'Delete document?',
+        confirmMessage: 'Remove "${file.name}" from Recent? '
+            'The file itself will not be deleted.',
+        onDelete: () => _removeRecent(file.path),
         child: SoftCard(
           onTap: () => _openRecent(file),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -375,7 +351,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
                     const Icon(Icons.bookmark_rounded,
                         size: 13, color: AppTheme.readerColor),
                     const SizedBox(width: 4),
-                    Text('Hal ${page + 1}',
+                    Text('Page ${page + 1}',
                         style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,

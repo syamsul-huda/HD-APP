@@ -44,9 +44,11 @@ class DownloadTask {
   int _lastSpeedReceived = 0;
 
   bool get isActive =>
-      status == DownloadStatus.preparing || status == DownloadStatus.downloading;
+      status == DownloadStatus.preparing ||
+      status == DownloadStatus.downloading;
 
-  String get typeLabel => isAudio ? '🎵 ${audioFormat.toUpperCase()}' : '📹 Video';
+  String get typeLabel =>
+      isAudio ? '🎵 ${audioFormat.toUpperCase()}' : '📹 Video';
 
   // Dipanggil setiap kali received berubah untuk menghitung kecepatan
   void tickSpeed(int newReceived) {
@@ -67,18 +69,18 @@ class DownloadTask {
   String get statusText {
     switch (status) {
       case DownloadStatus.preparing:
-        return 'Memproses di server...';
+        return 'Processing on server...';
       case DownloadStatus.downloading:
         final speed = speedBps >= 1024 ? ' · ${_fmtD(speedBps)}/s' : '';
         return total > 0
             ? '${_fmt(received)} / ${_fmt(total)}$speed'
-            : '${_fmt(received)} diunduh...$speed';
+            : '${_fmt(received)} downloaded...$speed';
       case DownloadStatus.completed:
-        return 'Selesai';
+        return 'Completed';
       case DownloadStatus.failed:
-        return 'Gagal: ${error ?? ""}';
+        return 'Failed: ${error ?? ""}';
       case DownloadStatus.cancelled:
-        return 'Dibatalkan';
+        return 'Cancelled';
     }
   }
 

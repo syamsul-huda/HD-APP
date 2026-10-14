@@ -4,7 +4,11 @@ import 'package:cunning_document_scanner/cunning_document_scanner.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
+import '../models/history_records.dart';
+import '../services/history_service.dart';
 import '../utils/app_theme.dart';
+import '../utils/swipe_to_delete.dart';
+import 'pdf_viewer_screen.dart';
 
 class ScannerScreen extends StatefulWidget {
   const ScannerScreen({super.key});
@@ -19,14 +23,37 @@ class _ScannerScreenState extends State<ScannerScreen> {
   int _viewPage = 0;
   final _pageCtrl = PageController();
 
+  List<ScanRecord> _history = [];
+
   static const _accent = AppTheme.scannerColor;
 
+  @override
+  void initState() {
+    super.initState();
+    _loadHistory();
+  }
+
+  Future<void> _loadHistory() async {
+    final items = await HistoryService.loadScans();
+    if (mounted) setState(() => _history = items);
+  }
+
+  Future<void> _addHistory(String type, List<String> paths) async {
+    final items = await HistoryService.addScan(ScanRecord(
+      type: type,
+      paths: paths,
+      pageCount: _pages.length,
+      date: DateTime.now().millisecondsSinceEpoch,
+    ));
+    if (mounted) setState(() => _history = items);
+  }
+
   static const _docTypes = [
-    ('KTP', Icons.credit_card_rounded, Color(0xFF1565C0)),
-    ('Ijazah', Icons.school_rounded, Color(0xFF217346)),
-    ('SIM', Icons.directions_car_rounded, Color(0xFFE65100)),
-    ('Sertifikat', Icons.workspace_premium_rounded, Color(0xFF7B8BFF)),
-    ('Dokumen Lain', Icons.description_rounded, Color(0xFF546E7A)),
+    ('ID Card', Icons.credit_card_rounded, Color(0xFF1565C0)),
+    ('Diploma', Icons.school_rounded, Color(0xFF217346)),
+    ('License', Icons.directions_car_rounded, Color(0xFFE65100)),
+    ('Certificate', Icons.workspace_premium_rounded, Color(0xFF7B8BFF)),
+    ('Other', Icons.description_rounded, Color(0xFF546E7A)),
   ];
 
   Future<void> _startScan() async {
@@ -42,7 +69,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
         if (_pageCtrl.hasClients) _pageCtrl.jumpToPage(0);
       }
     } catch (e) {
-      _snack('Kamera tidak tersedia: $e');
+      _snack('Camera not available: $e');
     }
   }
 
@@ -66,15 +93,16 @@ class _ScannerScreenState extends State<ScannerScreen> {
       final name = 'scan_${DateTime.now().millisecondsSinceEpoch}.pdf';
       final file = File('${dir.path}/$name');
       await file.writeAsBytes(await pdf.save());
+      await _addHistory('pdf', [file.path]);
 
-      _snack('Tersimpan: $name',
+      _snack('Saved: $name',
           action: SnackBarAction(
-            label: 'BUKA',
+            label: 'OPEN',
             textColor: _accent,
             onPressed: () => OpenFilex.open(file.path),
           ));
     } catch (e) {
-      _snack('Gagal simpan: $e');
+      _snack('Failed to save: $e');
     } finally {
       setState(() => _saving = false);
     }
@@ -87,12 +115,16 @@ class _ScannerScreenState extends State<ScannerScreen> {
       final dir = Directory('/storage/emulated/0/Download/SuperAppHD/Scans');
       await dir.create(recursive: true);
       final ts = DateTime.now().millisecondsSinceEpoch;
+      final saved = <String>[];
       for (int i = 0; i < _pages.length; i++) {
-        await File(_pages[i]).copy('${dir.path}/scan_${ts}_${i + 1}.jpg');
+        final out = '${dir.path}/scan_${ts}_${i + 1}.jpg';
+        await File(_pages[i]).copy(out);
+        saved.add(out);
       }
-      _snack('${_pages.length} gambar tersimpan di Downloads/SuperAppHD/Scans');
+      await _addHistory('jpg', saved);
+      _snack('${_pages.length} images saved to Downloads/SuperAppHD/Scans');
     } catch (e) {
-      _snack('Gagal simpan: $e');
+      _snack('Failed to save: $e');
     } finally {
       setState(() => _saving = false);
     }
@@ -117,18 +149,25 @@ class _ScannerScreenState extends State<ScannerScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Scanner Dokumen'),
+        title: const Text('Document Scanner'),
         actions: [
           if (_pages.isNotEmpty)
             TextButton.icon(
               onPressed: _startScan,
               icon: const Icon(Icons.refresh_rounded, size: 16),
-              label: const Text('Scan Ulang'),
+              label: const Text('Rescan'),
               style: TextButton.styleFrom(foregroundColor: _accent),
             ),
         ],
       ),
-      body: _pages.isEmpty ? _buildEmpty() : _buildResult(),
+      body: PopScope(
+        canPop: _pages.isEmpty,
+        // Back dari halaman hasil scan kembali ke beranda Scanner
+        onPopInvoked: (didPop) {
+          if (!didPop) setState(() => _pages = []);
+        },
+        child: _pages.isEmpty ? _buildEmpty() : _buildResult(),
+      ),
     );
   }
 
@@ -159,20 +198,24 @@ class _ScannerScreenState extends State<ScannerScreen> {
                     color: Colors.white, size: 44),
               ),
               const SizedBox(height: 16),
-              const Text('Mulai Scan',
+              const Text('Start Scanning',
                   style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w800,
                       color: Colors.white)),
               const SizedBox(height: 4),
-              Text('Tap untuk membuka kamera',
+              Text('Tap to open the camera',
                   style: TextStyle(
                       fontSize: 13, color: Colors.white.withOpacity(0.85))),
             ],
           ),
         ),
+        if (_history.isNotEmpty) ...[
+          const SizedBox(height: 32),
+          _buildHistorySection(),
+        ],
         const SizedBox(height: 24),
-        Text('JENIS DOKUMEN YANG BISA DISCAN',
+        Text('DOCUMENTS YOU CAN SCAN',
             style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
@@ -208,16 +251,123 @@ class _ScannerScreenState extends State<ScannerScreen> {
         const SizedBox(height: 32),
         Text('Tips', style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: 8),
-        _buildTip(Icons.wb_sunny_rounded, 'Gunakan pencahayaan yang cukup',
-            'Pastikan dokumen terang dan tidak ada bayangan'),
+        _buildTip(Icons.wb_sunny_rounded, 'Use good lighting',
+            'Make sure the document is bright and free of shadows'),
         const SizedBox(height: 8),
-        _buildTip(Icons.crop_free_rounded, 'Posisikan dengan benar',
-            'Letakkan dokumen di permukaan datar dan rata'),
+        _buildTip(Icons.crop_free_rounded, 'Position it properly',
+            'Place the document on a flat, even surface'),
         const SizedBox(height: 8),
-        _buildTip(Icons.hd_rounded, 'Pegang kamera stabil',
-            'Hindari guncangan untuk hasil scan yang tajam'),
+        _buildTip(Icons.hd_rounded, 'Hold the camera steady',
+            'Avoid shaking for a sharp scan'),
       ],
     );
+  }
+
+  // ── History ─────────────────────────────────────────────────────────────────
+  Widget _buildHistorySection() {
+    final sub = Theme.of(context).colorScheme.onSurfaceVariant;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(children: [
+          Text('History', style: Theme.of(context).textTheme.titleMedium),
+          const Spacer(),
+          TextButton(
+            onPressed: _clearHistory,
+            child:
+                Text('Clear all', style: TextStyle(fontSize: 12, color: sub)),
+          ),
+        ]),
+        Text('Swipe left on an item to delete it',
+            style: TextStyle(fontSize: 12, color: sub)),
+        const SizedBox(height: 8),
+        ..._history.map(_buildHistoryCard),
+      ],
+    );
+  }
+
+  Widget _buildHistoryCard(ScanRecord r) {
+    final sub = Theme.of(context).colorScheme.onSurfaceVariant;
+    final color = r.isPdf ? const Color(0xFFE53935) : _accent;
+    final pages = '${r.pageCount} page${r.pageCount == 1 ? '' : 's'}';
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: SwipeToDelete(
+        key: ValueKey('${r.date}_${r.type}'),
+        confirmTitle: 'Delete from history?',
+        confirmMessage: 'Remove this scan from history? '
+            'The saved ${r.isPdf ? 'PDF' : 'images'} will not be deleted.',
+        onDelete: () async {
+          setState(() => _history.remove(r));
+          await HistoryService.saveScans(_history);
+        },
+        child: SoftCard(
+          onTap: () => _openHistory(r),
+          padding: const EdgeInsets.all(12),
+          child: Row(children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(AppTheme.radiusChip),
+              child: Container(
+                width: 48,
+                height: 56,
+                color: color.withOpacity(0.12),
+                child: r.isPdf
+                    ? Icon(Icons.picture_as_pdf_rounded, color: color)
+                    : Image.file(File(r.paths.first),
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) =>
+                            Icon(Icons.image_rounded, color: color)),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(r.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            fontSize: 14, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 4),
+                    Text(
+                        '${r.type.toUpperCase()} · $pages · ${timeAgo(r.dateTime)}',
+                        style: TextStyle(fontSize: 12, color: sub)),
+                  ]),
+            ),
+            Icon(Icons.chevron_right_rounded, color: sub),
+          ]),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openHistory(ScanRecord r) async {
+    final path = r.paths.first;
+    if (!await File(path).exists()) {
+      _snack('File not found. It may have been moved or deleted.');
+      return;
+    }
+    if (!mounted) return;
+    if (r.isPdf) {
+      await Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (_) => PdfViewerScreen(path: path, title: r.name)));
+    } else {
+      await OpenFilex.open(path);
+    }
+  }
+
+  Future<void> _clearHistory() async {
+    final ok = await confirmDialog(context,
+        title: 'Clear scan history?',
+        message: 'All ${_history.length} items will be removed from history. '
+            'Saved files will not be deleted.',
+        confirmLabel: 'Clear all');
+    if (!ok) return;
+    setState(() => _history.clear());
+    await HistoryService.saveScans([]);
   }
 
   Widget _buildTip(IconData icon, String title, String desc) {
@@ -332,7 +482,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 child: Row(
                   children: [
-                    Text('${_viewPage + 1} / ${_pages.length} halaman',
+                    Text('Page ${_viewPage + 1} of ${_pages.length}',
                         style: TextStyle(
                             color: scheme.onSurfaceVariant, fontSize: 12)),
                     const Spacer(),
@@ -349,7 +499,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
                                   filled: false),
                               const SizedBox(width: 8),
                               _actionBtn(Icons.picture_as_pdf_rounded,
-                                  'Simpan PDF', _saveAsPdf,
+                                  'Save PDF', _saveAsPdf,
                                   filled: true),
                             ],
                           ),

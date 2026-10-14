@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'screens/dashboard_screen.dart';
 import 'services/api_service.dart';
 import 'services/app_settings.dart';
+import 'services/history_service.dart';
 import 'utils/app_theme.dart';
 
 void main() async {
@@ -10,6 +11,7 @@ void main() async {
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   await ApiService().init();
   await AppSettings.load();
+  await HistoryService.load();
   runApp(const App());
 }
 

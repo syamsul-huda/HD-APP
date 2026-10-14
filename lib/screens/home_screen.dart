@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -6,8 +8,11 @@ import 'package:open_filex/open_filex.dart';
 import 'package:share_plus/share_plus.dart';
 import '../models/video_info.dart';
 import '../models/download_task.dart';
+import '../models/history_records.dart';
 import '../services/api_service.dart';
+import '../services/history_service.dart';
 import '../utils/app_theme.dart';
+import '../utils/swipe_to_delete.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -24,7 +29,8 @@ class _HomeScreenState extends State<HomeScreen> {
   VideoInfo? _info;
   VideoFormat? _selectedFormat;
   String? _fetchError;
-  final _downloads = <DownloadTask>[];
+  final _downloads = <DownloadTask>[]; // sesi ini: aktif / gagal / batal
+  List<DownloadRecord> _history = []; // tersimpan: download selesai
 
   // Download type: 'video' atau 'audio'
   String _downloadType = 'video';
@@ -39,12 +45,13 @@ class _HomeScreenState extends State<HomeScreen> {
     ('Twitter / X', '✕', Color(0xFF888888)),
     ('Reddit', '●', Color(0xFFFF4500)),
     ('Telegram', '✈', Color(0xFF2CA5E0)),
-    ('dan 1000+ lainnya', '∞', Color(0xFF7B8BFF)),
+    ('and 1000+ more', '∞', Color(0xFF7B8BFF)),
   ];
 
   @override
   void initState() {
     super.initState();
+    _loadHistory();
   }
 
   @override
@@ -67,11 +74,11 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _fetchInfo() async {
     final url = _urlCtrl.text.trim();
     if (url.isEmpty) {
-      _snack('Masukkan URL video terlebih dahulu');
+      _snack('Please enter a video URL first');
       return;
     }
     if (!url.startsWith('http')) {
-      _snack('URL tidak valid — harus dimulai dengan http:// atau https://');
+      _snack('Invalid URL — it must start with http:// or https://');
       return;
     }
 
@@ -155,19 +162,38 @@ class _HomeScreenState extends State<HomeScreen> {
           if (status == DownloadStatus.downloading) task.tickSpeed(received);
         });
       },
-      onDone: (path) {
+      onDone: (path) async {
         setState(() {
           task.status = DownloadStatus.completed;
           task.filePath = path;
           task.progress = 1.0;
         });
+        if (!kIsWeb) {
+          // Pindahkan dari daftar sesi ke riwayat tersimpan
+          final items = await HistoryService.addDownload(DownloadRecord(
+            title: task.title,
+            platform: task.platform,
+            thumbnail: task.thumbnail,
+            filePath: path,
+            isAudio: task.isAudio,
+            audioFormat: task.audioFormat,
+            quality: task.quality,
+            date: DateTime.now().millisecondsSinceEpoch,
+          ));
+          if (mounted) {
+            setState(() {
+              _history = items;
+              _downloads.remove(task);
+            });
+          }
+        }
         if (kIsWeb) {
-          _snack('Download selesai! Cek folder Downloads kamu.');
+          _snack('Download complete! Check your Downloads folder.');
         } else {
           _snack(
-            'Download selesai!',
+            'Download complete!',
             action: SnackBarAction(
-              label: 'BUKA',
+              label: 'OPEN',
               textColor: const Color(0xFF7B8BFF),
               onPressed: () => OpenFilex.open(path),
             ),
@@ -175,7 +201,7 @@ class _HomeScreenState extends State<HomeScreen> {
         }
       },
       onError: (err) {
-        if (err == 'dibatalkan') {
+        if (err == 'cancelled') {
           setState(() => task.status = DownloadStatus.cancelled);
           return;
         }
@@ -183,7 +209,7 @@ class _HomeScreenState extends State<HomeScreen> {
           task.status = DownloadStatus.failed;
           task.error = err;
         });
-        _snack('Download gagal: $err');
+        _snack('Download failed: $err');
       },
     );
   }
@@ -204,13 +230,13 @@ class _HomeScreenState extends State<HomeScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Pengaturan Backend'),
+        title: const Text('Backend Settings'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'URL Backend Server',
+              'Backend Server URL',
               style: TextStyle(fontSize: 12, color: _sub),
             ),
             const SizedBox(height: 8),
@@ -224,7 +250,7 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(height: 12),
             Text(
               '• Android Emulator: http://10.0.2.2:8000\n'
-              '• HP Fisik: http://<IP-Komputer>:8000\n'
+              '• Physical phone: http://<Computer-IP>:8000\n'
               '• iOS Simulator: http://localhost:8000',
               style: TextStyle(fontSize: 11, color: _sub, height: 1.6),
             ),
@@ -233,16 +259,16 @@ class _HomeScreenState extends State<HomeScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Batal'),
+            child: const Text('Cancel'),
           ),
           ElevatedButton(
             onPressed: () async {
               await _api.setBackendUrl(ctrl.text.trim());
               if (ctx.mounted) Navigator.pop(ctx);
-              _snack('Backend URL disimpan');
+              _snack('Backend URL saved');
             },
             style: ElevatedButton.styleFrom(minimumSize: const Size(80, 40)),
-            child: const Text('Simpan'),
+            child: const Text('Save'),
           ),
         ],
       ),
@@ -262,9 +288,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   String _formatViewCount(int n) {
-    if (n >= 1000000) return '${(n / 1000000).toStringAsFixed(1)}M tayangan';
-    if (n >= 1000) return '${(n / 1000).toStringAsFixed(0)}K tayangan';
-    return '$n tayangan';
+    if (n >= 1000000) return '${(n / 1000000).toStringAsFixed(1)}M views';
+    if (n >= 1000) return '${(n / 1000).toStringAsFixed(0)}K views';
+    return '$n views';
   }
 
   // ── Warna tema ──────────────────────────────────────────────────────────────
@@ -296,7 +322,7 @@ class _HomeScreenState extends State<HomeScreen> {
           IconButton(
             icon: const Icon(Icons.tune_rounded, size: 22),
             onPressed: _showSettings,
-            tooltip: 'Pengaturan',
+            tooltip: 'Settings',
           ),
         ],
       ),
@@ -337,20 +363,39 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(height: 32),
             Row(
               children: [
-                Text('Riwayat Download',
+                Text('Downloads',
                     style: Theme.of(context).textTheme.titleMedium),
                 const Spacer(),
-                TextButton(
-                  onPressed: () => setState(
-                    () => _downloads.removeWhere((d) => !d.isActive),
+                if (_downloads.any((d) => !d.isActive))
+                  TextButton(
+                    onPressed: () => setState(
+                      () => _downloads.removeWhere((d) => !d.isActive),
+                    ),
+                    child: Text('Clear finished',
+                        style: TextStyle(fontSize: 12, color: _sub)),
                   ),
-                  child: Text('Hapus Selesai',
-                      style: TextStyle(fontSize: 12, color: _sub)),
-                ),
               ],
             ),
             const SizedBox(height: 8),
             ..._downloads.map(_buildDownloadCard),
+          ],
+          if (_history.isNotEmpty) ...[
+            const SizedBox(height: 32),
+            Row(
+              children: [
+                Text('History', style: Theme.of(context).textTheme.titleMedium),
+                const Spacer(),
+                TextButton(
+                  onPressed: _clearHistory,
+                  child: Text('Clear all',
+                      style: TextStyle(fontSize: 12, color: _sub)),
+                ),
+              ],
+            ),
+            Text('Swipe left on an item to delete it',
+                style: TextStyle(fontSize: 12, color: _sub)),
+            const SizedBox(height: 8),
+            ..._history.map(_buildHistoryCard),
           ],
         ],
       ),
@@ -361,7 +406,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _label('PLATFORM YANG DIDUKUNG'),
+        _label('SUPPORTED PLATFORMS'),
         Wrap(
           spacing: 8,
           runSpacing: 8,
@@ -413,10 +458,10 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Tempel link video',
+                    const Text('Paste a video link',
                         style: TextStyle(
                             fontSize: 16, fontWeight: FontWeight.w700)),
-                    Text('YouTube, TikTok, Instagram & lainnya',
+                    Text('YouTube, TikTok, Instagram & more',
                         style: TextStyle(fontSize: 12, color: _sub)),
                   ]),
             ),
@@ -456,7 +501,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     icon: const Icon(Icons.content_paste_rounded, size: 18),
                     color: _accent,
                     onPressed: _pasteFromClipboard,
-                    tooltip: 'Paste dari clipboard',
+                    tooltip: 'Paste from clipboard',
                   ),
                 ],
               ),
@@ -474,8 +519,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         strokeWidth: 2, color: Colors.white),
                   )
                 : const Icon(Icons.search_rounded),
-            label: Text(
-                _fetching ? 'Mengambil info video...' : 'Ambil Info Video'),
+            label:
+                Text(_fetching ? 'Fetching video info...' : 'Get Video Info'),
           ),
         ],
       ),
@@ -606,7 +651,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     if (info.formats.isNotEmpty)
                       _metaItem(
                         Icons.high_quality_rounded,
-                        '${info.formats.length - 1} format tersedia',
+                        '${info.formats.length - 1} formats available',
                       ),
                   ],
                 ),
@@ -633,7 +678,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _label('PILIH KUALITAS'),
+        _label('SELECT QUALITY'),
         Wrap(
           spacing: 8,
           runSpacing: 8,
@@ -725,7 +770,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   Expanded(
                     child: Text(
                       isPreparing
-                          ? 'Memproses di server...'
+                          ? 'Processing on server...'
                           : activeTask.statusText,
                       style: TextStyle(
                           color: color,
@@ -757,7 +802,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _label('JENIS DOWNLOAD'),
+        _label('DOWNLOAD TYPE'),
         Container(
           decoration: BoxDecoration(
             color: _fill,
@@ -774,7 +819,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               _typeTab(
                 icon: Icons.music_note_rounded,
-                label: 'Audio Saja',
+                label: 'Audio Only',
                 value: 'audio',
                 color: _audioColor,
               ),
@@ -831,7 +876,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (info.audioFormats.isEmpty) {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Text('Format audio tidak tersedia untuk video ini.',
+        child: Text('No audio formats available for this video.',
             style: TextStyle(color: _sub, fontSize: 13)),
       );
     }
@@ -839,7 +884,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _label('PILIH FORMAT AUDIO'),
+        _label('SELECT AUDIO FORMAT'),
         ...info.audioFormats.map((fmt) {
           final selected = _selectedAudioFormat?.audioFmt == fmt.audioFmt;
           return GestureDetector(
@@ -893,6 +938,98 @@ class _HomeScreenState extends State<HomeScreen> {
       ],
     );
   }
+
+  // ── History ─────────────────────────────────────────────────────────────────
+  Future<void> _loadHistory() async {
+    final items = await HistoryService.loadDownloads();
+    if (mounted) setState(() => _history = items);
+  }
+
+  Future<void> _removeHistory(DownloadRecord r) async {
+    setState(() => _history.remove(r));
+    await HistoryService.saveDownloads(_history);
+  }
+
+  Future<void> _clearHistory() async {
+    final ok = await confirmDialog(context,
+        title: 'Clear download history?',
+        message: 'All ${_history.length} items will be removed from history. '
+            'Downloaded files will not be deleted.',
+        confirmLabel: 'Clear all');
+    if (!ok) return;
+    setState(() => _history.clear());
+    await HistoryService.saveDownloads([]);
+  }
+
+  Future<void> _openHistory(DownloadRecord r) async {
+    if (!await File(r.filePath).exists()) {
+      _snack('File not found. It may have been moved or deleted.');
+      return;
+    }
+    await OpenFilex.open(r.filePath);
+  }
+
+  Widget _buildHistoryCard(DownloadRecord r) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: SwipeToDelete(
+        key: ValueKey(r.filePath),
+        confirmTitle: 'Delete from history?',
+        confirmMessage: 'Remove "${r.title}" from download history? '
+            'The downloaded file will not be deleted.',
+        onDelete: () => _removeHistory(r),
+        child: SoftCard(
+          onTap: () => _openHistory(r),
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(AppTheme.radiusChip),
+                child: SizedBox(
+                  width: 60,
+                  height: 60,
+                  child: r.thumbnail != null
+                      ? CachedNetworkImage(
+                          imageUrl: r.thumbnail!,
+                          fit: BoxFit.cover,
+                          errorWidget: (_, __, ___) => _historyIcon(r),
+                        )
+                      : _historyIcon(r),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(r.title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            fontSize: 14, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 4),
+                    Text(
+                        '${r.typeLabel} · ${r.platform} · ${timeAgo(r.dateTime)}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontSize: 12, color: _sub)),
+                  ],
+                ),
+              ),
+              _actionIcon(Icons.share_rounded, 'Share',
+                  () => Share.shareXFiles([XFile(r.filePath)])),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _historyIcon(DownloadRecord r) => Container(
+        color: (r.isAudio ? _audioColor : _accent).withOpacity(0.12),
+        child: Icon(r.isAudio ? Icons.music_note_rounded : Icons.movie_rounded,
+            color: r.isAudio ? _audioColor : _accent),
+      );
 
   // ── Download card ───────────────────────────────────────────────────────────
 
@@ -961,7 +1098,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          'Memproses di server...',
+                          'Processing on server...',
                           style: TextStyle(fontSize: 11, color: statusColor),
                         ),
                       ],
@@ -1014,12 +1151,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   if (!kIsWeb && task.filePath != null) ...[
                     _actionIcon(
                       Icons.open_in_new_rounded,
-                      'Buka',
+                      'Open',
                       () => OpenFilex.open(task.filePath!),
                     ),
                     _actionIcon(
                       Icons.share_rounded,
-                      'Bagikan',
+                      'Share',
                       () => Share.shareXFiles([XFile(task.filePath!)]),
                     ),
                   ] else
@@ -1030,7 +1167,7 @@ class _HomeScreenState extends State<HomeScreen> {
             else if (task.isActive)
               _actionIcon(
                 Icons.cancel_rounded,
-                'Batalkan',
+                'Cancel',
                 () {
                   task.cancelToken?.cancel();
                   setState(() => task.status = DownloadStatus.cancelled);

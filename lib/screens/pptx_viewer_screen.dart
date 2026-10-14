@@ -154,7 +154,7 @@ class _PptxViewerScreenState extends State<PptxViewerScreen>
                 ? _buildError()
                 : _slides.isEmpty
                     ? const Center(
-                        child: Text('Tidak ada konten',
+                        child: Text('No content',
                             style: TextStyle(color: Colors.white38)))
                     : isFullscreen
                         ? GestureDetector(
@@ -190,7 +190,7 @@ class _PptxViewerScreenState extends State<PptxViewerScreen>
           children: [
             const Icon(Icons.error_outline, color: Colors.redAccent, size: 48),
             const SizedBox(height: 12),
-            Text('Gagal membaca presentasi:\n$_error',
+            Text('Failed to read presentation:\n$_error',
                 textAlign: TextAlign.center,
                 style: const TextStyle(color: Colors.white54)),
           ],
@@ -313,7 +313,7 @@ class _PptxViewerScreenState extends State<PptxViewerScreen>
                         padding: const EdgeInsets.symmetric(vertical: 24),
                         child: Center(
                           child: Text(
-                            '— Slide kosong —',
+                            '— Empty slide —',
                             style: TextStyle(
                                 color: Colors.grey.shade400,
                                 fontStyle: FontStyle.italic),

@@ -53,10 +53,10 @@ class ApiService {
   String _friendlyError(DioException e) {
     if (e.type == DioExceptionType.connectionTimeout ||
         e.type == DioExceptionType.receiveTimeout) {
-      return 'Koneksi timeout. Pastikan backend sudah berjalan.';
+      return 'Connection timed out. Make sure the backend is running.';
     }
     if (e.type == DioExceptionType.connectionError) {
-      return 'Tidak bisa terhubung ke backend.\nPastikan server berjalan & URL benar di Settings ⚙';
+      return 'Cannot connect to the backend.\nMake sure the server is running and the URL in Settings ⚙ is correct.';
     }
     return e.message ?? e.toString();
   }
@@ -82,7 +82,8 @@ class ApiService {
     if (kIsWeb) {
       task.cancelToken = CancelToken();
       try {
-        final safe = task.title.replaceAll(RegExp(r'[<>:"/\\|?*\n\r]'), '').trim();
+        final safe =
+            task.title.replaceAll(RegExp(r'[<>:"/\\|?*\n\r]'), '').trim();
         final ext = task.isAudio ? task.audioFormat : 'mp4';
         final filename = '${safe.substring(0, safe.length.clamp(0, 50))}.$ext';
 
@@ -106,7 +107,7 @@ class ApiService {
         onDone('web_browser');
       } on DioException catch (e) {
         if (CancelToken.isCancel(e)) {
-          onError('dibatalkan');
+          onError('cancelled');
         } else {
           final detail = (e.response?.data as Map?)?['detail'] as String?;
           onError(detail ?? _friendlyError(e));
@@ -120,7 +121,8 @@ class ApiService {
     // ── Mobile: download ke file dengan Dio + progress ──
     try {
       final dir = await _getDir();
-      final safe = task.title.replaceAll(RegExp(r'[<>:"/\\|?*\n\r]'), '').trim();
+      final safe =
+          task.title.replaceAll(RegExp(r'[<>:"/\\|?*\n\r]'), '').trim();
       final name = safe.substring(0, safe.length.clamp(0, 50));
       final ts = DateTime.now().millisecondsSinceEpoch;
       final ext = task.isAudio ? task.audioFormat : 'mp4';
@@ -145,7 +147,7 @@ class ApiService {
       onDone(path);
     } on DioException catch (e) {
       if (CancelToken.isCancel(e)) {
-        onError('dibatalkan');
+        onError('cancelled');
       } else {
         final detail = (e.response?.data as Map?)?['detail'] as String?;
         onError(detail ?? _friendlyError(e));

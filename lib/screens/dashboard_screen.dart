@@ -1,10 +1,10 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../models/recent_file.dart';
 import '../services/api_service.dart';
 import '../services/app_settings.dart';
+import '../services/history_service.dart';
 import '../services/update_service.dart';
 import '../utils/app_theme.dart';
 import 'home_screen.dart';
@@ -58,27 +58,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
           icon: Icons.download_rounded,
           title: 'Video Downloader',
           description:
-              'Download video dari YouTube, TikTok, Instagram, Facebook, dan 1000+ platform lainnya',
+              'Download videos from YouTube, TikTok, Instagram, Facebook, and 1000+ other platforms',
           accentColor: AppTheme.downloaderColor,
           tags: const ['YouTube', 'TikTok', 'Instagram', '+1000'],
           onTap: () => _push(const HomeScreen()),
         ),
         _Feature(
           icon: Icons.menu_book_rounded,
-          title: 'Pembaca Dokumen',
+          title: 'Document Reader',
           description:
-              'Buka PDF, Word, Excel, PowerPoint, TXT langsung in-app tanpa aplikasi lain',
+              'Open PDF, Word, Excel, PowerPoint and TXT files right in the app',
           accentColor: AppTheme.readerColor,
           tags: const ['PDF', 'Word', 'Excel', 'PPT'],
           onTap: () => _push(const ReaderScreen()),
         ),
         _Feature(
           icon: Icons.document_scanner_rounded,
-          title: 'Scanner Dokumen',
+          title: 'Document Scanner',
           description:
-              'Scan KTP, ijazah, SIM, sertifikat, dan dokumen lainnya. Simpan sebagai PDF atau JPG',
+              'Scan ID cards, diplomas, licenses, certificates and more. Save as PDF or JPG',
           accentColor: AppTheme.scannerColor,
-          tags: const ['KTP', 'Ijazah', 'SIM', 'Sertifikat'],
+          tags: const ['ID Card', 'Diploma', 'License', 'Certificate'],
           onTap: () => _push(const ScannerScreen()),
         ),
       ];
@@ -99,7 +99,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             title: Row(children: [
               const Icon(Icons.system_update, color: Color(0xFF7B8BFF)),
               const SizedBox(width: 8),
-              Text('Update Tersedia',
+              Text('Update Available',
                   style: TextStyle(
                       color: isDark ? Colors.white : const Color(0xFF1A1A2E),
                       fontSize: 17)),
@@ -108,7 +108,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Versi ${update.version} sudah tersedia.',
+                  Text('Version ${update.version} is available.',
                       style: TextStyle(
                           color: isDark
                               ? Colors.white70
@@ -147,7 +147,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 : [
                     TextButton(
                       onPressed: () => Navigator.pop(ctx),
-                      child: Text('Nanti',
+                      child: Text('Later',
                           style: TextStyle(
                               color: isDark
                                   ? Colors.white38
@@ -168,7 +168,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         );
                         if (ctx.mounted) Navigator.pop(ctx);
                       },
-                      child: const Text('Update Sekarang'),
+                      child: const Text('Update Now'),
                     ),
                   ],
           );
@@ -192,46 +192,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   // ── Recent documents ────────────────────────────────────────────────────────
   Future<void> _loadRecent() async {
-    final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(RecentFile.prefKey);
     final items = <_RecentItem>[];
-    if (raw != null) {
-      try {
-        for (final f in RecentFile.decodeList(raw)) {
-          if (items.length >= 5) break;
-          if (!await File(f.path).exists()) continue;
-          final page = f.extension == 'pdf'
-              ? await PdfViewerScreen.lastReadPage(f.path)
-              : null;
-          items.add(_RecentItem(f, page));
-        }
-      } catch (_) {}
+    for (final f in await HistoryService.loadRecentFiles()) {
+      if (items.length >= 5) break;
+      if (!await File(f.path).exists()) continue;
+      final page = f.extension == 'pdf'
+          ? await PdfViewerScreen.lastReadPage(f.path)
+          : null;
+      items.add(_RecentItem(f, page));
     }
     if (mounted) setState(() => _recent = items);
   }
 
   Future<void> _openRecent(RecentFile f) async {
-    // Pindahkan ke paling atas daftar "terakhir dibuka"
-    final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(RecentFile.prefKey);
-    if (raw != null) {
-      final list = RecentFile.decodeList(raw)
-        ..removeWhere((e) => e.path == f.path);
-      list.insert(
-          0,
-          RecentFile(
-              path: f.path,
-              name: f.name,
-              extension: f.extension,
-              lastOpened: DateTime.now().millisecondsSinceEpoch));
-      await prefs.setString(RecentFile.prefKey, RecentFile.encodeList(list));
-    }
+    await HistoryService.touchRecentFile(f.path, f.name, f.extension);
     if (!mounted) return;
     final ok = await openDocumentViewer(context, f.path, f.name, f.extension);
     if (!ok && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content:
-              Text('Format .${f.extension.toUpperCase()} tidak didukung')));
+              Text('.${f.extension.toUpperCase()} format is not supported')));
     }
     _loadRecent();
   }
@@ -281,12 +261,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final sub = theme.colorScheme.onSurfaceVariant;
     final hour = DateTime.now().hour;
     final greet = hour < 11
-        ? 'Selamat pagi'
+        ? 'Good morning'
         : hour < 15
-            ? 'Selamat siang'
+            ? 'Good afternoon'
             : hour < 19
-                ? 'Selamat sore'
-                : 'Selamat malam';
+                ? 'Good evening'
+                : 'Good night';
 
     return Padding(
       padding: const EdgeInsets.only(top: 8),
@@ -315,12 +295,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Row(children: [
-        Text('Terakhir dibuka', style: theme.textTheme.titleMedium),
+        Text('Recently opened', style: theme.textTheme.titleMedium),
         const Spacer(),
         if (_recent.isNotEmpty)
           TextButton(
             onPressed: () => _push(const ReaderScreen()),
-            child: const Text('Lihat semua'),
+            child: const Text('See all'),
           ),
       ]),
       const SizedBox(height: 8),
@@ -331,7 +311,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             Icon(Icons.history_rounded, color: sub),
             const SizedBox(width: 12),
             Expanded(
-              child: Text('Dokumen yang kamu buka akan muncul di sini',
+              child: Text('Documents you open will appear here',
                   style: TextStyle(fontSize: 13, color: sub)),
             ),
           ]),
@@ -422,7 +402,7 @@ class _HeroCard extends StatelessWidget {
           child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
             Icon(Icons.content_paste_rounded, size: 16, color: a),
             const SizedBox(width: 6),
-            Text('Tempel link',
+            Text('Paste link',
                 style: TextStyle(
                     fontSize: 13, fontWeight: FontWeight.w700, color: a)),
           ]),
@@ -550,15 +530,6 @@ class _RecentTile extends StatelessWidget {
         _ => (Icons.text_snippet_rounded, const Color(0xFF546E7A)),
       };
 
-  static String _ago(DateTime d) {
-    final diff = DateTime.now().difference(d);
-    if (diff.inMinutes < 1) return 'Baru saja';
-    if (diff.inHours < 1) return '${diff.inMinutes} menit lalu';
-    if (diff.inDays < 1) return '${diff.inHours} jam lalu';
-    if (diff.inDays < 7) return '${diff.inDays} hari lalu';
-    return '${d.day}/${d.month}/${d.year}';
-  }
-
   @override
   Widget build(BuildContext context) {
     final (icon, color) = _style(item.file.extension);
@@ -587,7 +558,7 @@ class _RecentTile extends StatelessWidget {
                 style:
                     const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
             const SizedBox(height: 2),
-            Text(_ago(item.file.date),
+            Text(timeAgo(item.file.date),
                 style: TextStyle(fontSize: 12, color: sub)),
           ]),
         ),
@@ -603,7 +574,7 @@ class _RecentTile extends StatelessWidget {
               const Icon(Icons.bookmark_rounded,
                   size: 13, color: AppTheme.readerColor),
               const SizedBox(width: 4),
-              Text('Hal ${page + 1}',
+              Text('Page ${page + 1}',
                   style: const TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
@@ -672,7 +643,7 @@ class _SettingsSheetState extends State<_SettingsSheet> {
               const Icon(Icons.tune_rounded,
                   color: Color(0xFF7B8BFF), size: 22),
               const SizedBox(width: 10),
-              Text('Pengaturan',
+              Text('Settings',
                   style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -682,7 +653,7 @@ class _SettingsSheetState extends State<_SettingsSheet> {
           Divider(color: border, height: 1),
 
           // ── Section: Tampilan ──────────────────────────────────────────────
-          _sectionLabel('TAMPILAN', label),
+          _sectionLabel('APPEARANCE', label),
           const SizedBox(height: 4),
 
           // Dark mode toggle
@@ -705,14 +676,14 @@ class _SettingsSheetState extends State<_SettingsSheet> {
                   ),
                 ),
                 title: Text(
-                  dark ? 'Mode Gelap' : 'Mode Terang',
+                  dark ? 'Dark Mode' : 'Light Mode',
                   style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                       color: textPrimary),
                 ),
                 subtitle: Text(
-                  dark ? 'Cocok untuk malam hari' : 'Cocok untuk siang hari',
+                  dark ? 'Easier on the eyes at night' : 'Best for daytime use',
                   style: TextStyle(fontSize: 12, color: textSub),
                 ),
                 trailing: Switch.adaptive(
@@ -729,13 +700,13 @@ class _SettingsSheetState extends State<_SettingsSheet> {
             padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
             child:
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('Tampilan Beranda',
+              Text('Home Layout',
                   style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                       color: textPrimary)),
               const SizedBox(height: 2),
-              Text('Pilih cara menampilkan fitur',
+              Text('Choose how features are displayed',
                   style: TextStyle(fontSize: 12, color: textSub)),
               const SizedBox(height: 10),
               ValueListenableBuilder<String>(
@@ -760,8 +731,29 @@ class _SettingsSheetState extends State<_SettingsSheet> {
 
           Divider(color: border, height: 1),
 
+          // ── Section: History ───────────────────────────────────────────────
+          _sectionLabel('HISTORY', label),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
+            child: Text('Maximum number of items kept in each history (1–100)',
+                style: TextStyle(fontSize: 12, color: textSub)),
+          ),
+          _historyLimitTile(
+              Icons.download_rounded,
+              'Video Downloader',
+              AppTheme.downloaderColor,
+              HistoryService.downloaderLimit,
+              textPrimary),
+          _historyLimitTile(Icons.menu_book_rounded, 'Document Reader',
+              AppTheme.readerColor, HistoryService.readerLimit, textPrimary),
+          _historyLimitTile(Icons.document_scanner_rounded, 'Document Scanner',
+              AppTheme.scannerColor, HistoryService.scannerLimit, textPrimary),
+          const SizedBox(height: 8),
+
+          Divider(color: border, height: 1),
+
           // ── Section: Koneksi ───────────────────────────────────────────────
-          _sectionLabel('KONEKSI', label),
+          _sectionLabel('CONNECTION', label),
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
             child:
@@ -769,14 +761,14 @@ class _SettingsSheetState extends State<_SettingsSheet> {
               Row(children: [
                 Icon(Icons.cloud_outlined, size: 16, color: textSub),
                 const SizedBox(width: 6),
-                Text('URL Backend Server',
+                Text('Backend Server URL',
                     style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
                         color: textPrimary)),
               ]),
               const SizedBox(height: 2),
-              Text('Untuk fitur Video Downloader',
+              Text('Used by the Video Downloader',
                   style: TextStyle(fontSize: 12, color: textSub)),
               const SizedBox(height: 10),
               TextField(
@@ -790,7 +782,7 @@ class _SettingsSheetState extends State<_SettingsSheet> {
               const SizedBox(height: 8),
               Text(
                 '• Emulator: http://10.0.2.2:8000\n'
-                '• HP Fisik: http://<IP-Komputer>:8000',
+                '• Physical phone: http://<Computer-IP>:8000',
                 style: TextStyle(fontSize: 11, color: label, height: 1.6),
               ),
               const SizedBox(height: 12),
@@ -798,13 +790,13 @@ class _SettingsSheetState extends State<_SettingsSheet> {
                 width: double.infinity,
                 child: ElevatedButton.icon(
                   icon: const Icon(Icons.save_rounded, size: 18),
-                  label: const Text('Simpan URL'),
+                  label: const Text('Save URL'),
                   onPressed: () async {
                     await _api.setBackendUrl(_urlCtrl.text.trim());
                     if (!context.mounted) return;
                     Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                      content: const Text('Backend URL disimpan'),
+                      content: const Text('Backend URL saved'),
                       behavior: SnackBarBehavior.floating,
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10)),
@@ -820,6 +812,50 @@ class _SettingsSheetState extends State<_SettingsSheet> {
           SafeArea(
             top: false,
             child: const SizedBox(height: 20),
+          ),
+        ]),
+      ),
+    );
+  }
+
+  Widget _historyLimitTile(IconData icon, String title, Color color,
+      ValueNotifier<int> limit, Color textPrimary) {
+    return ValueListenableBuilder<int>(
+      valueListenable: limit,
+      builder: (ctx, value, _) => Padding(
+        padding: const EdgeInsets.fromLTRB(20, 8, 12, 0),
+        child: Row(children: [
+          Icon(icon, size: 20, color: color),
+          const SizedBox(width: 10),
+          SizedBox(
+            width: 120,
+            child: Text(title,
+                style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: textPrimary)),
+          ),
+          Expanded(
+            child: Slider(
+              value: value.toDouble(),
+              min: HistoryService.minLimit.toDouble(),
+              max: HistoryService.maxLimit.toDouble(),
+              divisions: HistoryService.maxLimit - HistoryService.minLimit,
+              activeColor: color,
+              label: '$value',
+              // Update tampilan saat digeser, simpan saat dilepas
+              onChanged: (v) => limit.value = v.round(),
+              onChangeEnd: (v) => HistoryService.setLimit(limit, v.round()),
+            ),
+          ),
+          SizedBox(
+            width: 32,
+            child: Text('$value',
+                textAlign: TextAlign.end,
+                style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: textPrimary)),
           ),
         ]),
       ),
@@ -867,3 +903,4 @@ class _SettingsSheetState extends State<_SettingsSheet> {
     );
   }
 }
+
