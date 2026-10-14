@@ -49,7 +49,8 @@ void main() {
       () async {
     await HistoryService.touchRecentFile('/a.pdf', 'a.pdf', 'pdf');
     await HistoryService.touchRecentFile('/b.pdf', 'b.pdf', 'pdf');
-    final items = await HistoryService.touchRecentFile('/a.pdf', 'a.pdf', 'pdf');
+    final items =
+        await HistoryService.touchRecentFile('/a.pdf', 'a.pdf', 'pdf');
     expect(items.map((e) => e.name), ['a.pdf', 'b.pdf']);
   });
 }

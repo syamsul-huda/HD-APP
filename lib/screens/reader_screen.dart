@@ -25,6 +25,10 @@ class _ReaderScreenState extends State<ReaderScreen> {
   Map<String, int> _pdfPages = {};
   bool _loading = false;
 
+  // Pencarian di daftar Recent
+  final _searchCtrl = TextEditingController();
+  String _query = '';
+
   static const _formats = [
     ('PDF', Icons.picture_as_pdf_rounded, Color(0xFFE53935)),
     ('Word', Icons.article_rounded, Color(0xFF1565C0)),
@@ -38,6 +42,29 @@ class _ReaderScreenState extends State<ReaderScreen> {
   void initState() {
     super.initState();
     _loadRecent();
+  }
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  List<String> get _terms => _query
+      .toLowerCase()
+      .split(RegExp(r'\s+'))
+      .where((t) => t.isNotEmpty)
+      .toList();
+
+  /// Cocokkan nama file / ekstensi; semua kata kunci harus ada
+  /// (mis. "laporan pdf" → nama berisi "laporan" dan berformat PDF).
+  List<RecentFile> get _filtered {
+    final terms = _terms;
+    if (terms.isEmpty) return _recent;
+    return _recent.where((f) {
+      final hay = '${f.name} ${f.extension}'.toLowerCase();
+      return terms.every(hay.contains);
+    }).toList();
   }
 
   Future<void> _loadRecent() async {
@@ -269,27 +296,113 @@ class _ReaderScreenState extends State<ReaderScreen> {
   }
 
   Widget _buildRecentSection(ThemeData theme) {
+    final sub = theme.colorScheme.onSurfaceVariant;
+    final results = _filtered;
+    final searching = _query.trim().isNotEmpty;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
             Text('Recent', style: theme.textTheme.titleMedium),
+            const SizedBox(width: 8),
+            Text('${_recent.length}',
+                style: TextStyle(fontSize: 13, color: sub)),
             const Spacer(),
             TextButton(
               onPressed: _clearAll,
-              child: Text('Clear all',
-                  style: TextStyle(
-                      fontSize: 12, color: theme.colorScheme.onSurfaceVariant)),
+              child:
+                  Text('Clear all', style: TextStyle(fontSize: 12, color: sub)),
             ),
           ],
         ),
-        Text('Swipe left on a document to delete it',
-            style: TextStyle(
-                fontSize: 12, color: theme.colorScheme.onSurfaceVariant)),
+        const SizedBox(height: 4),
+        TextField(
+          controller: _searchCtrl,
+          textInputAction: TextInputAction.search,
+          onChanged: (v) => setState(() => _query = v),
+          decoration: InputDecoration(
+            hintText: 'Search documents by name or type',
+            prefixIcon: const Icon(Icons.search_rounded, size: 20),
+            suffixIcon: searching
+                ? IconButton(
+                    tooltip: 'Clear search',
+                    icon: Icon(Icons.close_rounded, size: 18, color: sub),
+                    onPressed: () => setState(() {
+                      _searchCtrl.clear();
+                      _query = '';
+                    }),
+                  )
+                : null,
+          ),
+        ),
         const SizedBox(height: 8),
-        ..._recent.map((f) => _buildRecentCard(f, theme)),
+        Text(
+            searching
+                ? '${results.length} of ${_recent.length} documents'
+                : 'Swipe left on a document to delete it',
+            style: TextStyle(fontSize: 12, color: sub)),
+        const SizedBox(height: 8),
+        if (searching && results.isEmpty)
+          SoftCard(
+            padding: const EdgeInsets.all(20),
+            child: Row(children: [
+              Icon(Icons.search_off_rounded, color: sub),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text('No documents match "${_query.trim()}"',
+                    style: TextStyle(fontSize: 13, color: sub)),
+              ),
+            ]),
+          )
+        else
+          ...results.map((f) => _buildRecentCard(f, theme)),
       ],
+    );
+  }
+
+  /// Nama file dengan bagian yang cocok dengan pencarian ditebalkan.
+  Widget _highlightedName(String name, ThemeData theme) {
+    const base = TextStyle(fontSize: 14, fontWeight: FontWeight.w600);
+    final terms = _terms;
+    if (terms.isEmpty) {
+      return Text(name,
+          maxLines: 1, overflow: TextOverflow.ellipsis, style: base);
+    }
+
+    // Tandai karakter yang termasuk salah satu kata kunci
+    final lower = name.toLowerCase();
+    final marked = List<bool>.filled(name.length, false);
+    for (final t in terms) {
+      var i = lower.indexOf(t);
+      while (i >= 0) {
+        for (var k = i; k < i + t.length; k++) {
+          marked[k] = true;
+        }
+        i = lower.indexOf(t, i + t.length);
+      }
+    }
+
+    final hl = base.copyWith(
+      color: AppTheme.readerColor,
+      backgroundColor: AppTheme.readerColor.withOpacity(0.15),
+    );
+    final spans = <TextSpan>[];
+    var start = 0;
+    for (var i = 1; i <= name.length; i++) {
+      if (i == name.length || marked[i] != marked[start]) {
+        spans.add(TextSpan(
+            text: name.substring(start, i), style: marked[start] ? hl : null));
+        start = i;
+      }
+    }
+    return Text.rich(
+      TextSpan(
+          style: base.copyWith(color: theme.colorScheme.onSurface),
+          children: spans),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
     );
   }
 
@@ -327,11 +440,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(file.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                            fontSize: 14, fontWeight: FontWeight.w600)),
+                    _highlightedName(file.name, theme),
                     const SizedBox(height: 3),
                     Text('${file.extension.toUpperCase()} · $timeStr',
                         style: TextStyle(fontSize: 12, color: sub)),
