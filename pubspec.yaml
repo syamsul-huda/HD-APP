@@ -1,7 +1,7 @@
 name: super_app_hd
 description: SuperApp HD - Video Downloader, Pembaca Dokumen, dan Scanner
 publish_to: 'none'
-version: 1.0.24+24
+version: 1.0.25+25
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -23,7 +23,6 @@ dependencies:
   flutter_pdfview: ^1.3.2
   archive: ^3.6.1
   xml: ^6.5.0
-  excel: ^4.0.6
   cunning_document_scanner: ^1.0.6
   pdf: ^3.10.8
 
@@ -45,3 +44,59 @@ flutter:
   uses-material-design: true
   assets:
     - assets/icon/
+    - assets/fonts/LICENSE-Carlito.txt
+    - assets/fonts/LICENSE-Caladea.txt
+    - assets/fonts/LICENSE-Liberation.txt
+  # Font yang metriknya sama dengan font Office (Calibri, Cambria, Arial,
+  # Times New Roman, Courier New) agar tata letak dokumen tidak bergeser.
+  fonts:
+    - family: Carlito
+      fonts:
+        - asset: assets/fonts/Carlito-Regular.ttf
+        - asset: assets/fonts/Carlito-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/Carlito-Italic.ttf
+          style: italic
+        - asset: assets/fonts/Carlito-BoldItalic.ttf
+          weight: 700
+          style: italic
+    - family: Caladea
+      fonts:
+        - asset: assets/fonts/Caladea-Regular.ttf
+        - asset: assets/fonts/Caladea-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/Caladea-Italic.ttf
+          style: italic
+        - asset: assets/fonts/Caladea-BoldItalic.ttf
+          weight: 700
+          style: italic
+    - family: Liberation Sans
+      fonts:
+        - asset: assets/fonts/LiberationSans-Regular.ttf
+        - asset: assets/fonts/LiberationSans-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/LiberationSans-Italic.ttf
+          style: italic
+        - asset: assets/fonts/LiberationSans-BoldItalic.ttf
+          weight: 700
+          style: italic
+    - family: Liberation Serif
+      fonts:
+        - asset: assets/fonts/LiberationSerif-Regular.ttf
+        - asset: assets/fonts/LiberationSerif-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/LiberationSerif-Italic.ttf
+          style: italic
+        - asset: assets/fonts/LiberationSerif-BoldItalic.ttf
+          weight: 700
+          style: italic
+    - family: Liberation Mono
+      fonts:
+        - asset: assets/fonts/LiberationMono-Regular.ttf
+        - asset: assets/fonts/LiberationMono-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/LiberationMono-Italic.ttf
+          style: italic
+        - asset: assets/fonts/LiberationMono-BoldItalic.ttf
+          weight: 700
+          style: italic

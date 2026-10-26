@@ -523,9 +523,12 @@ class _RecentTile extends StatelessWidget {
 
   static (IconData, Color) _style(String ext) => switch (ext) {
         'pdf' => (Icons.picture_as_pdf_rounded, const Color(0xFFE53935)),
-        'docx' || 'odt' => (Icons.article_rounded, const Color(0xFF1565C0)),
-        'xlsx' || 'ods' => (Icons.table_chart_rounded, const Color(0xFF217346)),
-        'pptx' || 'odp' => (Icons.slideshow_rounded, const Color(0xFFD24726)),
+        'doc' || 'docx' || 'docm' || 'dotx' || 'rtf' || 'odt' =>
+          (Icons.article_rounded, const Color(0xFF1565C0)),
+        'xls' || 'xlsx' || 'xlsm' || 'ods' =>
+          (Icons.table_chart_rounded, const Color(0xFF217346)),
+        'ppt' || 'pptx' || 'pptm' || 'pps' || 'ppsx' || 'odp' =>
+          (Icons.slideshow_rounded, const Color(0xFFD24726)),
         'csv' => (Icons.grid_on_rounded, const Color(0xFF00695C)),
         _ => (Icons.text_snippet_rounded, const Color(0xFF546E7A)),
       };

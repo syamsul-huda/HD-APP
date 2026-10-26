@@ -4,14 +4,17 @@ import 'package:file_picker/file_picker.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
 import '../models/recent_file.dart';
+import '../services/document_convert_service.dart';
 import '../services/history_service.dart';
 import '../utils/app_theme.dart';
 import '../utils/fullscreen_reader.dart';
+import '../utils/office/office_common.dart';
 import '../utils/swipe_to_delete.dart';
 import 'pdf_viewer_screen.dart';
 import 'docx_viewer_screen.dart';
 import 'xlsx_viewer_screen.dart';
 import 'pptx_viewer_screen.dart';
+import 'converted_pdf_screen.dart';
 
 class ReaderScreen extends StatefulWidget {
   const ReaderScreen({super.key});
@@ -36,6 +39,8 @@ class _ReaderScreenState extends State<ReaderScreen> {
     ('PPT', Icons.slideshow_rounded, Color(0xFFD24726)),
     ('TXT', Icons.text_snippet_rounded, Color(0xFF546E7A)),
     ('CSV', Icons.grid_on_rounded, Color(0xFF00695C)),
+    ('RTF', Icons.notes_rounded, Color(0xFF6D4C41)),
+    ('OpenDocument', Icons.description_rounded, Color(0xFF0288D1)),
   ];
 
   @override
@@ -92,12 +97,20 @@ class _ReaderScreenState extends State<ReaderScreen> {
           'pdf',
           'doc',
           'docx',
+          'docm',
+          'dotx',
+          'rtf',
           'xls',
           'xlsx',
+          'xlsm',
           'ppt',
           'pptx',
+          'pptm',
+          'ppsx',
+          'pps',
           'txt',
           'csv',
+          'tsv',
           'odt',
           'ods',
           'odp',
@@ -149,7 +162,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
     _loadPdfPages();
     if (!opened && mounted) {
       _snack(
-          '.${ext.toUpperCase()} files are not supported in-app. Install WPS Office to open them.');
+          '.${ext.toUpperCase()} files cannot be opened on this device.');
     }
   }
 
@@ -492,14 +505,21 @@ class _ReaderScreenState extends State<ReaderScreen> {
         return const Color(0xFFE53935);
       case 'doc':
       case 'docx':
+      case 'docm':
+      case 'dotx':
+      case 'rtf':
       case 'odt':
         return const Color(0xFF1565C0);
       case 'xls':
       case 'xlsx':
+      case 'xlsm':
       case 'ods':
         return const Color(0xFF217346);
       case 'ppt':
       case 'pptx':
+      case 'pptm':
+      case 'pps':
+      case 'ppsx':
       case 'odp':
         return const Color(0xFFD24726);
       case 'txt':
@@ -517,14 +537,21 @@ class _ReaderScreenState extends State<ReaderScreen> {
         return Icons.picture_as_pdf_rounded;
       case 'doc':
       case 'docx':
+      case 'docm':
+      case 'dotx':
+      case 'rtf':
       case 'odt':
         return Icons.article_rounded;
       case 'xls':
       case 'xlsx':
+      case 'xlsm':
       case 'ods':
         return Icons.table_chart_rounded;
       case 'ppt':
       case 'pptx':
+      case 'pptm':
+      case 'pps':
+      case 'ppsx':
       case 'odp':
         return Icons.slideshow_rounded;
       case 'txt':
@@ -537,23 +564,59 @@ class _ReaderScreenState extends State<ReaderScreen> {
   }
 }
 
+const _wordExts = {'docx', 'docm', 'dotx', 'dotm', 'odt'};
+const _sheetExts = {'xlsx', 'xlsm', 'xltx', 'xltm', 'ods', 'csv', 'tsv'};
+const _slideExts = {'pptx', 'pptm', 'ppsx', 'ppsm', 'potx', 'odp'};
+const _textExts = {'txt', 'log', 'md', 'json', 'xml'};
+
+/// Kenali format dari isi file jika ekstensi tidak ada / tidak dikenal
+/// (mis. file dari WhatsApp atau download tanpa nama yang benar).
+Future<String> sniffDocumentType(String path, String ext) async {
+  const known = {'pdf', ..._wordExts, ..._sheetExts, ..._slideExts, ..._textExts};
+  if (known.contains(ext) || DocumentConvertService.legacyFormats.contains(ext)) return ext;
+  try {
+    final raf = await File(path).open();
+    final head = await raf.read(8);
+    await raf.close();
+    if (head.length >= 4 && String.fromCharCodes(head.take(4)) == '%PDF') return 'pdf';
+    if (head.length >= 8 && head[0] == 0xD0 && head[1] == 0xCF && head[2] == 0x11 && head[3] == 0xE0) {
+      return 'doc'; // OLE (doc/xls/ppt lama): LibreOffice mengenali isinya sendiri
+    }
+    if (head.length >= 2 && head[0] == 0x50 && head[1] == 0x4B) {
+      final pkg = OfficePackage(await File(path).readAsBytes());
+      if (pkg.has('word/document.xml')) return 'docx';
+      if (pkg.has('xl/workbook.xml')) return 'xlsx';
+      if (pkg.has('ppt/presentation.xml')) return 'pptx';
+      final mime = pkg.text('mimetype') ?? '';
+      if (mime.endsWith('opendocument.text')) return 'odt';
+      if (mime.endsWith('opendocument.spreadsheet')) return 'ods';
+      if (mime.endsWith('opendocument.presentation')) return 'odp';
+    }
+  } catch (_) {}
+  return ext;
+}
+
 /// Buka dokumen dengan viewer in-app yang sesuai (atau aplikasi eksternal).
 /// Mengembalikan false jika format tidak bisa dibuka.
 Future<bool> openDocumentViewer(
     BuildContext context, String path, String name, String ext) async {
-  ext = ext.toLowerCase();
+  ext = await sniffDocumentType(path, ext.toLowerCase());
   Widget? screen;
   if (ext == 'pdf') {
     screen = PdfViewerScreen(path: path, title: name);
-  } else if (ext == 'txt' || ext == 'csv') {
-    final content = await File(path).readAsString();
+  } else if (_textExts.contains(ext)) {
+    final content = decodeText(await File(path).readAsBytes());
     screen = _TextViewerScreen(title: name, content: content);
-  } else if (ext == 'docx' || ext == 'odt') {
-    screen = DocxViewerScreen(path: path, title: name);
-  } else if (ext == 'xlsx' || ext == 'ods') {
-    screen = XlsxViewerScreen(path: path, title: name);
-  } else if (ext == 'pptx' || ext == 'odp') {
-    screen = PptxViewerScreen(path: path, title: name);
+  } else if (_wordExts.contains(ext)) {
+    screen = DocxViewerScreen(path: path, title: name, ext: ext == 'odt' ? 'odt' : 'docx');
+  } else if (_sheetExts.contains(ext)) {
+    final kind = switch (ext) { 'ods' => 'ods', 'csv' || 'tsv' => 'csv', _ => 'xlsx' };
+    screen = XlsxViewerScreen(path: path, title: name, ext: kind);
+  } else if (_slideExts.contains(ext)) {
+    screen = PptxViewerScreen(path: path, title: name, ext: ext == 'odp' ? 'odp' : 'pptx');
+  } else if (DocumentConvertService.legacyFormats.contains(ext)) {
+    // .doc/.xls/.ppt/.rtf: konversi ke PDF dengan tata letak asli
+    screen = ConvertedPdfScreen(path: path, title: name);
   }
 
   if (screen == null) {
